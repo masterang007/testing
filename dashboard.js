@@ -252,64 +252,60 @@ const Dashboard = () => {
     };
 
     //  initialization and data syncing
-            useEffect(() => {
-                const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
-                let unsubscribe = null;
+useEffect(() => {
+        if (!firebaseAvailable) {
+            fallbackToLocal();
+            return;
+        }
+        
+        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
+        let unsubscribe = null;
+        
+        if (USER_FIREBASE_CONFIG) {
+            setIsCloudAvailable(true);
+            try {
+                const app = initializeApp(USER_FIREBASE_CONFIG);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
                 
-                if (activeConfig) {
-                    setIsCloudAvailable(true);
-                    try {
-                        const app = initializeApp(activeConfig);
-                        const auth = getAuth(app);
-                        const db = getFirestore(app);
+                const path = doc(db, 'dashboard_data', 'live_status');
+                
+                signInAnonymously(auth).catch(() => fallbackToLocal());
+                
+                onAuthStateChanged(auth, (u) => {
+                    if (u) {
+                        setUser(u);
                         
-                        const path = configSource === 'user' 
-                            ? doc(db, 'dashboard_data', 'live_status') 
-                            : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
-                        
-                        if (configSource === 'canvas' && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            signInWithCustomToken(auth, __initial_auth_token).catch(() => fallbackToLocal());
-                        } else {
-                            signInAnonymously(auth).catch(() => fallbackToLocal());
-                        }
-                        
-                        onAuthStateChanged(auth, (u) => {
-                            if (u) {
-                                setUser(u);
-                                
-                                unsubscribe = onSnapshot(path, (docSnap) => {
-                                    if (docSnap.exists()) {
-                                        const d = docSnap.data();
-                                        if (d.dashboardData) {
-                                            setDashboardData(d.dashboardData);
-                                        }
-                                        if (d.lastUpdated) {
-                                            setLastUpdated(d.lastUpdated);
-                                        }
-                                        if (d.lastUploaded) {
-                                            setLastUploaded(d.lastUploaded);
-                                        }
-                                    } else {
-                                        setLastUpdated("Waiting for cloud data...");
-                                    }
-                                }, (error) => {
-                                    console.error("Cloud sync error:", error);
-                                    fallbackToLocal();
-                                });
+                        unsubscribe = onSnapshot(path, (docSnap) => {
+                            if (docSnap.exists()) {
+                                const d = docSnap.data();
+                                if (d.dashboardData) {
+                                    setDashboardData(d.dashboardData);
+                                }
+                                if (d.lastUpdated) {
+                                    setLastUpdated(d.lastUpdated);
+                                }
+                            } else {
+                                setLastUpdated("Waiting for cloud data...");
                             }
+                        }, (error) => {
+                            console.error("Cloud sync error:", error);
+                            fallbackToLocal();
                         });
-                    } catch (error) {
-                        console.error("Firebase initialization error:", error);
-                        fallbackToLocal();
                     }
-                } else {
-                    fallbackToLocal();
-                }
-                
-                return () => {
-                    if (unsubscribe) unsubscribe();
-                };
-            }, []);
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                fallbackToLocal();
+            }
+        } else {
+            fallbackToLocal();
+        }
+        
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
 
     // Fallback to local storage when cloud is unavailable
     const fallbackToLocal = () => {
