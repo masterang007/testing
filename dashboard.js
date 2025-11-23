@@ -690,122 +690,141 @@ const Dashboard = () => {
                         </div>
                     </div>
                     
-                    {/* Hourly Trends Chart - FIXED FOR MOBILE */}
-                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 flex flex-col">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <Icons.TrendingUp className="text-plant-green w-5 h-5" /> 
-                                Hourly Trends (12h)
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {['production', 'energy', 'steam'].map(mode => (
-                                    <button 
-                                        key={mode} 
-                                        onClick={() => setChartView(mode)} 
-                                        className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition-all ${
-                                            chartView === mode 
-                                                ? 'bg-indigo-600 text-white shadow shadow-indigo-900/30' 
-                                                : 'text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-750 border border-gray-700'
-                                        }`}
-                                    >
-                                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="w-full min-h-[280px] md:min-h-[450px]">
-                            {window.Recharts ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart 
-                                        data={dashboardData.hourly} 
-                                        margin={{ 
-                                            top: 10, 
-                                            right: 15, 
-                                            left: 0, 
-                                            bottom: 25 
-                                        }}
-                                    >
-                                        <defs>
-                                            <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="colorOrange" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="colorPurple" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="colorRed" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="colorCyan" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                                        <XAxis 
-                                            dataKey="time" 
-                                            stroke="#9ca3af" 
-                                            tick={{fontSize: 11, fill: '#9ca3af'}} 
-                                            tickLine={false} 
-                                            axisLine={false} 
-                                            interval="preserveStartEnd"
-                                            minTickGap={30}
-                                            height={40}
-                                        />
-                                        <YAxis 
-                                            stroke="#9ca3af" 
-                                            tick={{fontSize: 11, fill: '#9ca3af'}} 
-                                            tickLine={false} 
-                                            axisLine={false} 
-                                            width={40}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend 
-                                            iconType="circle" 
-                                            wrapperStyle={{fontSize: '12px', paddingTop: '12px'}} 
-                                        />
-                                        {chartView === 'production' && (
-                                            <>
-                                                <Area type="monotone" dataKey="pxRate" name="PX Rate" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
-                                                <Area type="monotone" dataKey="adm1" name="ADM 1" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
-                                                <Area type="monotone" dataKey="adm2" name="ADM 2" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
-                                            </>
-                                        )}
-                                        {chartView === 'energy' && (
-                                            <>
-                                                <Area type="monotone" dataKey="plantPower" name="Plant Power" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorOrange)" />
-                                                <Area type="monotone" dataKey="powerGen" name="Power Gen" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
-                                                <Area type="monotone" dataKey="bc101a" name="BC101A" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
-                                                <Area type="monotone" dataKey="bc101b" name="BC101B" stroke="#ec4899" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
-                                            </>
-                                        )}
-                                        {chartView === 'steam' && (
-                                            <>
-                                                <Area type="monotone" dataKey="steamFlex" name="Steam FLEX" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorOrange)" />
-                                                <Area type="monotone" dataKey="steamDht" name="Steam DHT" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorRed)" />
-                                                <Area type="monotone" dataKey="header44" name="4.4 Header" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorCyan)" />
-                                            </>
-                                        )}
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plant-green mb-4"></div>
-                                    <p>Loading chart components...</p>
+                            {/* Hourly Trends Chart - FIXED FOR MOBILE & DESKTOP */}
+                            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 flex flex-col">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Icons.TrendingUp className="text-plant-green w-5 h-5" /> 
+                                        Hourly Trends (12h)
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['production', 'energy', 'steam'].map(mode => (
+                                            <button 
+                                                key={mode} 
+                                                onClick={() => setChartView(mode)} 
+                                                className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition-all ${
+                                                    chartView === mode 
+                                                        ? 'bg-indigo-600 text-white shadow shadow-indigo-900/30' 
+                                                        : 'text-gray-400 bg-gray-800 hover:text-white hover:bg-gray-750 border border-gray-700'
+                                                }`}
+                                            >
+                                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                                <div className="chart-container">
+                                    {window.Recharts ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart 
+                                                data={dashboardData.hourly} 
+                                                margin={{ 
+                                                    top: 10, 
+                                                    right: 15, 
+                                                    left: 0, 
+                                                    bottom: 25 
+                                                }}
+                                            >
+                                                <defs>
+                                                    <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorOrange" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorPurple" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorRed" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorCyan" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                    <linearGradient id="colorYellow" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                                                <XAxis 
+                                                    dataKey="time" 
+                                                    stroke="#9ca3af" 
+                                                    tick={{fontSize: 11, fill: '#9ca3af'}} 
+                                                    tickLine={false} 
+                                                    axisLine={false} 
+                                                    interval="preserveStartEnd"
+                                                    minTickGap={30}
+                                                    height={40}
+                                                />
+                                                <YAxis 
+                                                    stroke="#9ca3af" 
+                                                    tick={{fontSize: 11, fill: '#9ca3af'}} 
+                                                    tickLine={false} 
+                                                    axisLine={false} 
+                                                    width={40}
+                                                />
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Legend 
+                                                    iconType="circle" 
+                                                    wrapperStyle={{fontSize: '12px', paddingTop: '12px'}} 
+                                                    payload={
+                                                        chartView === 'production' ? [{value: 'PX Rate', type: 'circle', color: '#10b981'}] : 
+                                                        chartView === 'energy' ? [
+                                                            {value: 'Plant Power', type: 'circle', color: '#f59e0b'},
+                                                            {value: 'Power Gen', type: 'circle', color: '#10b981'},
+                                                            {value: 'BC101A', type: 'circle', color: '#6366f1'},
+                                                            {value: 'BC101B', type: 'circle', color: '#ec4899'}
+                                                        ] : [
+                                                            {value: 'Steam FLEX', type: 'circle', color: '#f97316'},
+                                                            {value: 'Steam DHT', type: 'circle', color: '#ef4444'},
+                                                            {value: '4.4 Header', type: 'circle', color: '#06b6d4'},
+                                                            {value: 'ADM 1', type: 'circle', color: '#8b5cf6'},
+                                                            {value: 'ADM 2', type: 'circle', color: '#eab308'}
+                                                        ]
+                                                    }
+                                                />
+                                                {chartView === 'production' && (
+                                                    <Area type="monotone" dataKey="pxRate" name="PX Rate" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
+                                                )}
+                                                {chartView === 'energy' && (
+                                                    <>
+                                                        <Area type="monotone" dataKey="plantPower" name="Plant Power" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorOrange)" />
+                                                        <Area type="monotone" dataKey="powerGen" name="Power Gen" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
+                                                        <Area type="monotone" dataKey="bc101a" name="BC101A" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
+                                                        <Area type="monotone" dataKey="bc101b" name="BC101B" stroke="#ec4899" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
+                                                        <ReferenceLine y={20} stroke="#f59e0b" strokeDasharray="3 3" label={{value: "Plant Target", position: "insideTopRight", fill: "#f59e0b"}} />
+                                                    </>
+                                                )}
+                                                {chartView === 'steam' && (
+                                                    <>
+                                                        <Area type="monotone" dataKey="steamFlex" name="Steam FLEX" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorOrange)" />
+                                                        <Area type="monotone" dataKey="steamDht" name="Steam DHT" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorRed)" />
+                                                        <Area type="monotone" dataKey="header44" name="4.4 Header" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorCyan)" />
+                                                        <Area type="monotone" dataKey="adm1" name="ADM 1" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
+                                                        <Area type="monotone" dataKey="adm2" name="ADM 2" stroke="#eab308" strokeWidth={2} fillOpacity={1} fill="url(#colorYellow)" />
+                                                        <ReferenceLine y={6} stroke="#06b6d4" strokeDasharray="3 3" label={{value: "Header Target", position: "insideTopRight", fill: "#06b6d4"}} />
+                                                    </>
+                                                )}
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plant-green mb-4"></div>
+                                            <p>Loading chart components...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                     
                     {/* Oxidation Process Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
