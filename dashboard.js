@@ -251,7 +251,7 @@ const Dashboard = () => {
         }, 800);
     };
 
-    // Firebase initialization and data syncing
+    //  initialization and data syncing
     useEffect(() => {
         if (!firebaseAvailable) {
             fallbackToLocal();
@@ -1146,13 +1146,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // Firebase configuration
 const USER_FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: "",
-    measurementId: ""
+  apiKey: "AIzaSyB5gFPpiFHvG4LnF2KhDQVa6R98cTb-cfA", // Unique to your registered web app
+  authDomain: "rpcm-new-dashboard.firebaseapp.com",
+  projectId: "rpcm-new-dashboard",
+  storageBucket: "rpcm-new-dashboard.firebasestorage.app",
+  messagingSenderId: "777004713762",
+  appId: "1:718536830642:web:7c34bf37017efe40e5a3ab", // Unique to your registered web app
+  measurementId: "G-514074652"
 };
 
 // Initialize the app
