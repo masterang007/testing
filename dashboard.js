@@ -1,3 +1,51 @@
+// Error Boundary Component (added at top level)
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null, errorInfo: null };
+            }
+            
+            static getDerivedStateFromError(error) {
+                return { hasError: true };
+            }
+            
+            componentDidCatch(error, errorInfo) {
+                console.error("React error boundary caught:", error, errorInfo);
+                this.setState({ 
+                    hasError: true,
+                    error: error,
+                    errorInfo: errorInfo
+                });
+            }
+            
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center p-4">
+                            <div className="text-center max-w-md">
+                                <div className="text-5xl mb-4 text-red-500">⚠️</div>
+                                <h2 className="text-2xl font-bold text-white mb-2">Application Error</h2>
+                                <p className="text-gray-300 mb-6">Something went wrong while loading the dashboard.</p>
+                                <div className="bg-gray-800 border border-red-900 rounded-lg p-4 mb-6 text-left text-sm text-gray-300 overflow-auto max-h-64">
+                                    <p className="font-mono">{this.state.error?.toString()}</p>
+                                </div>
+                                <button 
+                                    onClick={() => window.location.reload()} 
+                                    className="bg-plant-green hover:bg-green-600 text-gray-900 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Reload Dashboard
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
         const { useState, useEffect, useMemo, useRef } = React;
         const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
         
