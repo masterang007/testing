@@ -1,42 +1,50 @@
 const { useState, useEffect, useMemo, useRef } = React;
-const { 
-    AreaChart, 
-    Area, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
-    Legend, 
-    ResponsiveContainer, 
-    ReferenceLine 
-} = window.Recharts || {};
+const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
 
-// Component definitions
-const Icons = {
-    Zap: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-    Activity: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    Thermometer: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>,
-    GaugeIcon: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>,
-    Droplet: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-2-3-2-3l-5-8-5 8s-2 1-2 3a7 7 0 0 0 7 7z"/></svg>,
-    Droplets: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.8-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>,
-    ShieldAlert: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-    TrendingUp: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-    Upload: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-    RefreshCw: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
-    Key: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 9.33-2.5"/></svg>,
-    Lock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+// Firebase initialization check
+const firebaseAvailable = window.firebaseModules && window.firebaseModules.initializeApp;
+
+// Main App Component
+const App = () => {
+    const [authenticated, setAuthenticated] = useState(false);
+    
+    useEffect(() => {
+        // Check if already authenticated in session
+        if (sessionStorage.getItem('rpcm_authenticated') === 'true') {
+            setAuthenticated(true);
+            return;
+        }
+        
+        // Check for "remember me" device authentication
+        const deviceAuth = localStorage.getItem('rpcm_device_auth');
+        if (deviceAuth) {
+            try {
+                const authData = JSON.parse(deviceAuth);
+                // Check if not expired
+                if (new Date(authData.expires) > new Date()) {
+                    // Check device hash for security
+                    const currentDeviceHash = btoa(navigator.userAgent + window.screen.width + window.screen.height);
+                    if (authData.deviceHash === currentDeviceHash) {
+                        sessionStorage.setItem('rpcm_authenticated', 'true');
+                        setAuthenticated(true);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("Device auth error:", e);
+                localStorage.removeItem('rpcm_device_auth');
+            }
+        }
+    }, []);
+    
+    if (!authenticated) {
+        return <PasswordGate onLogin={() => setAuthenticated(true)} />;
+    }
+    
+    return <Dashboard />;
 };
 
-const RpcmLogo = ({ className }) => (
-    <svg viewBox="0 0 200 180" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M100 5 L190 50 V140 L100 185 L10 140 V50 L100 5Z" stroke="currentColor" strokeWidth="12" strokeLinejoin="round"/>
-        <path d="M25 65 L175 65" stroke="currentColor" strokeWidth="2" opacity="0.5"/> 
-        <path d="M25 125 L175 125" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
-        <text x="100" y="115" textAnchor="middle" fill="currentColor" fontSize="52" fontWeight="bold" fontFamily="Arial, sans-serif" letterSpacing="2">RPCM</text>
-    </svg>
-);
-
-// --- PASSWORD GATE ---
+// Password Gate Component
 const PasswordGate = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -47,9 +55,10 @@ const PasswordGate = ({ onLogin }) => {
         e.preventDefault();
         setIsLoading(true);
         
-        // Simulate slight delay for better UX
+        // Small delay for UX
         setTimeout(() => {
             if (password === 'rpcm') {
+                // Set session authentication
                 sessionStorage.setItem('rpcm_authenticated', 'true');
                 
                 // Handle "Remember me" functionality
@@ -149,7 +158,7 @@ const PasswordGate = ({ onLogin }) => {
     );
 };
 
-// Main Dashboard component
+// Main Dashboard Component
 const Dashboard = () => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [chartView, setChartView] = useState('production');
@@ -159,24 +168,25 @@ const Dashboard = () => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [isCloudAvailable, setIsCloudAvailable] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    
     const [dashboardData, setDashboardData] = useState({
         production: [
             { id: 'cta', title: 'CTA Production', actual: 0, target: 1808, unit: 'tonnes' },
-            { id: 'pta', title: 'PTA Production', actual: 0, target: 1857, unit: 'tonnes' }
+            { id: 'pta', title: 'PTA Production', actual: 0, target: 1857, unit: 'tonnes' },
+            { id: 'availability', title: 'Plant Availability', actual: 0, target: 97.0, unit: '%' },
+            { id: 'utilization', title: 'Plant Utilization', actual: 0, target: 100, unit: '%' },
+            { id: 'conversion', title: 'Total Conversion Cost', actual: 0, target: 0, unit: 'USD' }
         ],
-        availability: { actual: 0, target: 97.0 },
         metrics: {
             power: [
-                { id: 'p1', title: 'Plant Power', value: 0, max: 20, unit: 'MW', icon: 'Zap' }, 
+                { id: 'p1', title: 'Plant Power', value: 0, max: 30, unit: 'MW', icon: 'Zap' }, 
                 { id: 'p2', title: 'Power Gen', value: 0, max: 15, unit: 'MW', icon: 'Zap' },
-                { id: 'p3', title: 'BC101A', value: 0, max: 10, unit: 'MW', icon: 'Zap' },
-                { id: 'p4', title: 'BC101B', value: 0, max: 10, unit: 'MW', icon: 'Zap' }
+                { id: 'p3', title: 'BC101A', value: 0, max: 30, unit: 'MW', icon: 'Zap' },
+                { id: 'p4', title: 'BC101B', value: 0, max: 30, unit: 'MW', icon: 'Zap' }
             ],
             steam: [
                 { id: 's1', title: 'Steam FLEXSYS', value: 0, max: 30, unit: 'TPH', icon: 'Thermometer' }, 
                 { id: 's2', title: 'Steam to DHT', value: 0, max: 100, unit: 'TPH', icon: 'Thermometer' },
-                { id: 's3', title: '4.4 Steam Header', value: 0, max: 6, unit: 'kg/cm2', icon: 'GaugeIcon' }
+                { id: 's3', title: '4.4 Steam Header', value: 0, max: 60, unit: 'kg/cm2', icon: 'GaugeIcon' }
             ],
             flow: [
                 { id: 'f1', title: 'PX Rate', value: 0, max: 60, unit: 'TPH', icon: 'Droplet' }, 
@@ -184,83 +194,66 @@ const Dashboard = () => {
                 { id: 'f3', title: 'ADM 2 Flow', value: 0, max: 60, unit: 'TPH', icon: 'Droplets' }
             ]
         },
-        hsse: { alarms: 0, bypass: 0, limit: 0, leaks: { toxic: 0, hac: 0, hotOil: 0, gas: 0 } },
-        efficiency: { 
-            power: { val: 0, tgt: 175 }, 
-            hac: { val: 0, tgt: 28.3 }, 
-            px: { val: 0, tgt: 14.0 }, 
-            catalyst: { val: 0, tgt: 0.42 }, 
-            wwt: { val: 0, tgt: 200 }, 
-            water: { val: 0, unit: 'm3' } 
+        oxidation: {
+            efficiency: [
+                { id: 'e1', title: 'Total Power', value: 0, target: 175, unit: 'kWh/t', inverse: true },
+                { id: 'e2', title: 'HAC Cons.', value: 0, target: 28.3, unit: 'kg/t', inverse: true },
+                { id: 'e3', title: 'Excess PX', value: 0, target: 14, unit: 'kg/t', inverse: false },
+                { id: 'e4', title: 'CMB Catalyst', value: 0, target: 0.42, unit: 'kg/t', inverse: true },
+                { id: 'e5', title: 'Catalyst Activity', value: 0, target: 0.10, unit: 'kg H\u2082 / 4CBA', inverse: false }
+            ],
+            reaction: [
+                { id: 'r1', title: 'Rx A Temp', value: 0, target: 192.5, unit: '\xB0C', range: '190-195' },
+                { id: 'r2', title: 'Rx B Temp', value: 0, target: 192.5, unit: '\xB0C', range: '190-195' },
+                { id: 'r3', title: 'Rx A VO\u2082', value: 0, target: 4.0, unit: '% vol', range: '3.5-4.5' },
+                { id: 'r4', title: 'Rx B VO\u2082', value: 0, target: 4.0, unit: '% vol', range: '3.5-4.5' }
+            ]
         },
+        environment: {
+            wwt: [
+                { id: 'w1', title: 'WWT Influent TOC', value: 0, target: 2250, unit: 'ppm', range: '2000-2500' },
+                { id: 'w2', title: 'AR701 Efficiency', value: 0, target: 90, unit: '%', inverse: false },
+                { id: 'w3', title: 'Final Effluent COD', value: 0, target: 200, unit: 'ppm', inverse: true },
+                { id: 'w4', title: 'Biogas Production', value: 0, unit: 'kg/hr' }
+            ]
+        },
+        hsse: { alarms: 0, bypass: 0, limit: 0 },
         hourly: []
     });
-    
+    const [dataVersion, setDataVersion] = useState(0);
+
+    // Refresh handler
     const handleRefresh = () => {
         if (isRefreshing) return;
         
         setIsRefreshing(true);
         setTimeout(() => {
-            if(isCloudAvailable && user && window.firebaseModules?.activeConfig) {
-                setLastUpdated("Refreshed from Cloud - " + new Date().toLocaleTimeString());
-            } else {
-                const stored = localStorage.getItem('rpcm_dashboard_data_v17');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        const merged = {
-                            ...dashboardData,
-                            ...parsed,
-                            metrics: {
-                                power: parsed.metrics?.power || dashboardData.metrics.power,
-                                steam: parsed.metrics?.steam || dashboardData.metrics.steam,
-                                flow: parsed.metrics?.flow || dashboardData.metrics.flow
-                            },
-                            hourly: parsed.hourly || []
-                        };
-                        setDashboardData(merged);
-                        setLastUpdated("Refreshed from Local - " + new Date().toLocaleTimeString());
-                    } catch (e) {
-                        console.error("Error refreshing from local storage:", e);
-                    }
-                }
-            }
+            // Just refresh UI to trigger re-render
+            setDataVersion(prev => prev + 1);
             setIsRefreshing(false);
         }, 800);
     };
-    
+
+    // Firebase initialization and data syncing
     useEffect(() => {
-        const { 
-            activeConfig, 
-            configSource,
-            initializeApp, 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged, 
-            signInWithCustomToken, 
-            getFirestore, 
-            doc, 
-            onSnapshot 
-        } = window.firebaseModules;
+        if (!firebaseAvailable) {
+            fallbackToLocal();
+            return;
+        }
         
+        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
         let unsubscribe = null;
         
-        if (activeConfig) {
+        if (USER_FIREBASE_CONFIG) {
             setIsCloudAvailable(true);
             try {
-                const app = initializeApp(activeConfig);
+                const app = initializeApp(USER_FIREBASE_CONFIG);
                 const auth = getAuth(app);
                 const db = getFirestore(app);
                 
-                const path = configSource === 'user' 
-                    ? doc(db, 'dashboard_data', 'live_status') 
-                    : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
+                const path = doc(db, 'dashboard_data', 'live_status');
                 
-                if (configSource === 'canvas' && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    signInWithCustomToken(auth, __initial_auth_token).catch(() => fallbackToLocal());
-                } else {
-                    signInAnonymously(auth).catch(() => fallbackToLocal());
-                }
+                signInAnonymously(auth).catch(() => fallbackToLocal());
                 
                 onAuthStateChanged(auth, (u) => {
                     if (u) {
@@ -269,17 +262,12 @@ const Dashboard = () => {
                         unsubscribe = onSnapshot(path, (docSnap) => {
                             if (docSnap.exists()) {
                                 const d = docSnap.data();
-                                const merged = { 
-                                    ...dashboardData, 
-                                    ...d.dashboardData, 
-                                    metrics: { 
-                                        ...dashboardData.metrics, 
-                                        ...(d.dashboardData.metrics || {}) 
-                                    },
-                                    hourly: d.dashboardData.hourly || []
-                                };
-                                setDashboardData(merged);
-                                setLastUpdated(d.lastUpdated || "Data updated at: " + new Date().toLocaleTimeString());
+                                if (d.dashboardData) {
+                                    setDashboardData(d.dashboardData);
+                                }
+                                if (d.lastUpdated) {
+                                    setLastUpdated(d.lastUpdated);
+                                }
                             } else {
                                 setLastUpdated("Waiting for cloud data...");
                             }
@@ -301,85 +289,95 @@ const Dashboard = () => {
             if (unsubscribe) unsubscribe();
         };
     }, []);
-    
+
+    // Fallback to local storage when cloud is unavailable
     const fallbackToLocal = () => {
         setIsCloudAvailable(false);
         setLastUpdated("Local Mode (Offline) - " + new Date().toLocaleTimeString());
         
-        const stored = localStorage.getItem('rpcm_dashboard_data_v17');
+        const stored = localStorage.getItem('rpcm_dashboard_data_v2');
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                const merged = {
-                    ...dashboardData,
-                    ...parsed,
-                    metrics: {
-                        power: parsed.metrics?.power || dashboardData.metrics.power,
-                        steam: parsed.metrics?.steam || dashboardData.metrics.steam,
-                        flow: parsed.metrics?.flow || dashboardData.metrics.flow
-                    },
-                    hourly: parsed.hourly || []
-                };
-                setDashboardData(merged);
-                setLastUpdated("Restored from Local Storage - " + new Date().toLocaleTimeString());
+                setDashboardData(parsed);
+                if (parsed.lastUpdated) {
+                    setLastUpdated(parsed.lastUpdated);
+                }
             } catch (e) {
                 console.error("Error loading from local storage:", e);
             }
         } else {
-            // Set default values from the provided Excel data
-            setDashboardData(prev => ({
-                ...prev,
+            // Set default demo values
+            setDashboardData({
                 production: [
-                    { id: 'cta', title: 'CTA Production', actual: 1810, target: 1808, unit: 'tonnes' },
-                    { id: 'pta', title: 'PTA Production', actual: 1861, target: 1857, unit: 'tonnes' }
+                    { id: 'cta', title: 'CTA Production', actual: 1473, target: 1808, unit: 'tonnes' },
+                    { id: 'pta', title: 'PTA Production', actual: 1733, target: 1857, unit: 'tonnes' },
+                    { id: 'availability', title: 'Plant Availability', actual: 81.4, target: 97.0, unit: '%' },
+                    { id: 'utilization', title: 'Plant Utilization', actual: 93.3, target: 100, unit: '%' },
+                    { id: 'conversion', title: 'Total Conversion Cost', actual: 83.45, target: 0, unit: 'USD' }
                 ],
-                availability: { actual: 86, target: 97.0 },
                 metrics: {
                     power: [
-                        { id: 'p1', title: 'Plant Power', value: 14.59, max: 20, unit: 'MW', icon: 'Zap' }, 
-                        { id: 'p2', title: 'Power Gen', value: 9.02, max: 15, unit: 'MW', icon: 'Zap' },
-                        { id: 'p3', title: 'BC101A', value: 5.18, max: 10, unit: 'MW', icon: 'Zap' },
-                        { id: 'p4', title: 'BC101B', value: 6.85, max: 10, unit: 'MW', icon: 'Zap' }
+                        { id: 'p1', title: 'Plant Power', value: 21.53, max: 30, unit: 'MW', icon: 'Zap' }, 
+                        { id: 'p2', title: 'Power Gen', value: 0.02, max: 15, unit: 'MW', icon: 'Zap' },
+                        { id: 'p3', title: 'BC101A', value: 7.25, max: 30, unit: 'MW', icon: 'Zap' },
+                        { id: 'p4', title: 'BC101B', value: 23.15, max: 30, unit: 'MW', icon: 'Zap' }
                     ],
                     steam: [
-                        { id: 's1', title: 'Steam FLEXSYS', value: 19.16, max: 30, unit: 'TPH', icon: 'Thermometer' }, 
-                        { id: 's2', title: 'Steam to DHT', value: 65.45, max: 100, unit: 'TPH', icon: 'Thermometer' },
-                        { id: 's3', title: '4.4 Steam Header', value: 4.26, max: 6, unit: 'kg/cm2', icon: 'GaugeIcon' }
+                        { id: 's1', title: 'Steam FLEXSYS', value: 10.61, max: 30, unit: 'TPH', icon: 'Thermometer' }, 
+                        { id: 's2', title: 'Steam to DHT', value: 0, max: 100, unit: 'TPH', icon: 'Thermometer' },
+                        { id: 's3', title: '4.4 Steam Header', value: 50.25, max: 60, unit: 'kg/cm2', icon: 'GaugeIcon' }
                     ],
                     flow: [
-                        { id: 'f1', title: 'PX Rate', value: 48.09, max: 60, unit: 'TPH', icon: 'Droplet' }, 
-                        { id: 'f2', title: 'ADM 1 Flow', value: 22.31, max: 40, unit: 'TPH', icon: 'Droplets' },
-                        { id: 'f3', title: 'ADM 2 Flow', value: 46.96, max: 60, unit: 'TPH', icon: 'Droplets' }
+                        { id: 'f1', title: 'PX Rate', value: 4.89, max: 60, unit: 'TPH', icon: 'Droplet' }, 
+                        { id: 'f2', title: 'ADM 1 Flow', value: 0.28, max: 40, unit: 'TPH', icon: 'Droplets' },
+                        { id: 'f3', title: 'ADM 2 Flow', value: 0.5, max: 60, unit: 'TPH', icon: 'Droplets' }
+                    ]
+                },
+                oxidation: {
+                    efficiency: [
+                        { id: 'e1', title: 'Total Power', value: 275, target: 175, unit: 'kWh/t', inverse: true },
+                        { id: 'e2', title: 'HAC Cons.', value: 31.08, target: 28.3, unit: 'kg/t', inverse: true },
+                        { id: 'e3', title: 'Excess PX', value: 5.7, target: 14, unit: 'kg/t', inverse: false },
+                        { id: 'e4', title: 'CMB Catalyst', value: 0.5, target: 0.42, unit: 'kg/t', inverse: true },
+                        { id: 'e5', title: 'Catalyst Activity', value: 0.12, target: 0.10, unit: 'kg H\u2082 / 4CBA', inverse: false }
+                    ],
+                    reaction: [
+                        { id: 'r1', title: 'Rx A Temp', value: 189, target: 192.5, unit: '\xB0C', range: '190-195' },
+                        { id: 'r2', title: 'Rx B Temp', value: 166, target: 192.5, unit: '\xB0C', range: '190-195' },
+                        { id: 'r3', title: 'Rx A VO\u2082', value: 3.7, target: 4.0, unit: '% vol', range: '3.5-4.5' },
+                        { id: 'r4', title: 'Rx B VO\u2082', value: 3.9, target: 4.0, unit: '% vol', range: '3.5-4.5' }
+                    ]
+                },
+                environment: {
+                    wwt: [
+                        { id: 'w1', title: 'WWT Influent TOC', value: 1193, target: 2250, unit: 'ppm', range: '2000-2500' },
+                        { id: 'w2', title: 'AR701 Efficiency', value: 33, target: 90, unit: '%', inverse: false },
+                        { id: 'w3', title: 'Final Effluent COD', value: 14, target: 200, unit: 'ppm', inverse: true },
+                        { id: 'w4', title: 'Biogas Production', value: 644, unit: 'kg/hr' }
                     ]
                 },
                 hsse: { alarms: 0, bypass: 2, limit: 14 },
-                efficiency: { 
-                    power: { val: 291, tgt: 175 }, 
-                    hac: { val: 28.8, tgt: 28.3 }, 
-                    px: { val: 15.45, tgt: 14.0 }, 
-                    catalyst: { val: 0.44, tgt: 0.42 }, 
-                    wwt: { val: 49, tgt: 200 }, 
-                    water: { val: 149, unit: 'm3' } 
-                },
                 hourly: [
-                    {time: '7:00', plantPower: 14.26, powerGen: 9.2, steamFlex: 18.88, pxRate: 49.04, bc101a: 5.17, bc101b: 6.67, steamDht: 66.44, header44: 4.26, liveHeader: 4.41, adm2: 47.52, adm1: 22.35},
-                    {time: '8:00', plantPower: 14.33, powerGen: 9.14, steamFlex: 18.92, pxRate: 47.9, bc101a: 5.12, bc101b: 6.69, steamDht: 66.18, header44: 4.26, liveHeader: 4.42, adm2: 47.91, adm1: 22.63},
-                    {time: '9:00', plantPower: 14.28, powerGen: 9.12, steamFlex: 18.71, pxRate: 48.22, bc101a: 5.14, bc101b: 6.71, steamDht: 65.74, header44: 4.26, liveHeader: 4.42, adm2: 47.4, adm1: 22.55},
-                    {time: '10:00', plantPower: 14.18, powerGen: 9.18, steamFlex: 18.84, pxRate: 48.05, bc101a: 5.16, bc101b: 6.71, steamDht: 64.93, header44: 4.27, liveHeader: 4.43, adm2: 47.62, adm1: 22.44},
-                    {time: '11:00', plantPower: 14.39, powerGen: 9.15, steamFlex: 18.86, pxRate: 48.98, bc101a: 5.24, bc101b: 6.76, steamDht: 64.93, header44: 4.26, liveHeader: 4.43, adm2: 47.43, adm1: 22.43},
-                    {time: '12:00', plantPower: 14.49, powerGen: 9.06, steamFlex: 18.9, pxRate: 47.75, bc101a: 5.22, bc101b: 6.81, steamDht: 65.08, header44: 4.26, liveHeader: 4.42, adm2: 46.33, adm1: 22.39},
-                    {time: '13:00', plantPower: 14.56, powerGen: 8.99, steamFlex: 18.98, pxRate: 47.55, bc101a: 5.21, bc101b: 6.83, steamDht: 64.85, header44: 4.26, liveHeader: 4.41, adm2: 46.68, adm1: 22.3},
-                    {time: '14:00', plantPower: 14.67, powerGen: 8.96, steamFlex: 19.37, pxRate: 48.05, bc101a: 5.19, bc101b: 6.85, steamDht: 64.83, header44: 4.26, liveHeader: 4.42, adm2: 46.91, adm1: 22.63},
-                    {time: '15:00', plantPower: 15.12, powerGen: 8.78, steamFlex: 19.66, pxRate: 47.96, bc101a: 5.21, bc101b: 7.08, steamDht: 65.79, header44: 4.26, liveHeader: 4.42, adm2: 48.05, adm1: 22.44},
-                    {time: '16:00', plantPower: 14.66, powerGen: 8.97, steamFlex: 19.4, pxRate: 48.09, bc101a: 5.18, bc101b: 6.89, steamDht: 65.65, header44: 4.25, liveHeader: 4.42, adm2: 46.25, adm1: 21.52},
-                    {time: '17:00', plantPower: 14.81, powerGen: 8.96, steamFlex: 19.31, pxRate: 47.9, bc101a: 5.22, bc101b: 6.95, steamDht: 65.24, header44: 4.26, liveHeader: 4.42, adm2: 46.3, adm1: 21.81},
-                    {time: '18:00', plantPower: 15.3, powerGen: 8.69, steamFlex: 20.04, pxRate: 47.57, bc101a: 5.15, bc101b: 7.19, steamDht: 65.72, header44: 4.26, liveHeader: 4.43, adm2: 45.16, adm1: 22.21}
+                    {time: '7:00', plantPower: 20.83, powerGen: 0.03, steamFlex: 1.02, pxRate: 20.11, bc101a: 10.13, bc101b: 0.00, steamDht: 46.61, header44: 4.99, liveHeader: 5.18, adm2: 1.08, adm1: 1.10},
+                    {time: '8:00', plantPower: 21.25, powerGen: 0.03, steamFlex: 1.02, pxRate: 23.42, bc101a: 10.23, bc101b: 0.00, steamDht: 55.62, header44: 4.80, liveHeader: 4.98, adm2: 1.14, adm1: 0.43},
+                    {time: '9:00', plantPower: 21.66, powerGen: 0.03, steamFlex: 3.02, pxRate: 24.22, bc101a: 10.54, bc101b: 0.00, steamDht: 53.29, header44: 4.90, liveHeader: 5.08, adm2: 1.20, adm1: 0.35},
+                    {time: '10:00', plantPower: 21.56, powerGen: 0.03, steamFlex: 9.17, pxRate: 22.16, bc101a: 10.54, bc101b: 0.00, steamDht: 51.36, header44: 4.79, liveHeader: 4.96, adm2: 1.39, adm1: 0.27},
+                    {time: '11:00', plantPower: 21.55, powerGen: 0.03, steamFlex: 9.12, pxRate: 23.02, bc101a: 10.58, bc101b: 0.00, steamDht: 50.46, header44: 4.79, liveHeader: 4.97, adm2: 0.37, adm1: 0.20},
+                    {time: '12:00', plantPower: 21.53, powerGen: 0.03, steamFlex: 9.13, pxRate: 23.93, bc101a: 10.65, bc101b: 0.00, steamDht: 49.62, header44: 4.89, liveHeader: 5.09, adm2: 0.13, adm1: 0.14},
+                    {time: '13:00', plantPower: 21.68, powerGen: 0.03, steamFlex: 9.04, pxRate: 23.28, bc101a: 10.83, bc101b: 0.00, steamDht: 49.59, header44: 4.94, liveHeader: 5.12, adm2: 0.12, adm1: 0.14},
+                    {time: '14:00', plantPower: 21.63, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.49, bc101a: 10.80, bc101b: 0.00, steamDht: 49.19, header44: 4.92, liveHeader: 5.11, adm2: 0.13, adm1: 0.14},
+                    {time: '15:00', plantPower: 21.70, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.61, bc101a: 10.81, bc101b: 0.00, steamDht: 49.27, header44: 4.92, liveHeader: 5.10, adm2: 0.12, adm1: 0.14},
+                    {time: '16:00', plantPower: 21.71, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.55, bc101a: 10.80, bc101b: 0.00, steamDht: 49.35, header44: 4.92, liveHeader: 5.10, adm2: 0.13, adm1: 0.14},
+                    {time: '17:00', plantPower: 21.66, powerGen: 0.02, steamFlex: 9.10, pxRate: 23.46, bc101a: 10.73, bc101b: 0.00, steamDht: 49.25, header44: 4.91, liveHeader: 5.09, adm2: 0.12, adm1: 0.14},
+                    {time: '18:00', plantPower: 21.64, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.53, bc101a: 10.71, bc101b: 0.00, steamDht: 49.44, header44: 4.90, liveHeader: 5.09, adm2: 0.13, adm1: 0.14}
                 ]
-            }));
+            });
             setLastUpdated("Default demo data loaded");
         }
     };
-    
+
+    // Excel file upload handler
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -395,29 +393,35 @@ const Dashboard = () => {
             if (wsMain) {
                 const raw = XLSX.utils.sheet_to_json(wsMain, { header: 1 });
                 
-                const findValue = (name) => {
+                const findValue = (name, alternatives = []) => {
+                    const allNames = [name, ...alternatives];
                     const row = raw.find(r => 
                         r[0] && typeof r[0] === 'string' && 
-                        r[0].toLowerCase().includes(name.toLowerCase())
+                        allNames.some(n => r[0].toLowerCase().includes(n.toLowerCase()))
                     );
                     return row ? { 
-                        val: parseFloat(row[2]), 
-                        tgt: parseFloat(row[3]) 
+                        val: parseFloat(row[2]?.toString().replace(/,/g, '') || 0), 
+                        tgt: parseFloat(row[3]?.toString().replace(/,/g, '') || 0) 
                     } : null;
                 };
                 
-                // Map production values
+                // Production metrics
                 const cta = findValue('CTA Production');
                 if(cta) newData.production[0].actual = cta.val;
                 
                 const pta = findValue('PTA Production');
                 if(pta) newData.production[1].actual = pta.val;
                 
-                // Map availability
                 const avail = findValue('Plant Availability');
-                if(avail) newData.availability.actual = avail.val;
+                if(avail) newData.production[2].actual = avail.val;
                 
-                // Map power metrics
+                const util = findValue('Plant Utilization Rate');
+                if(util) newData.production[3].actual = util.val;
+                
+                const conv = findValue('Total Conversion Cost');
+                if(conv) newData.production[4].actual = conv.val;
+                
+                // Utilities - Power
                 const plantP = findValue('Plant Power');
                 if(plantP) newData.metrics.power[0].value = plantP.val;
                 
@@ -430,47 +434,70 @@ const Dashboard = () => {
                 const bc101b = findValue('BC101B');
                 if(bc101b) newData.metrics.power[3].value = bc101b.val;
                 
-                // Map steam metrics
+                // Utilities - Steam
                 const sFlex = findValue('Steam FLEXSYS');
                 if(sFlex) newData.metrics.steam[0].value = sFlex.val;
                 
-                const sDht = findValue('Steam to DHT');
+                const sDht = findValue('Steam to DHT', ['Steam DHT']);
                 if(sDht) newData.metrics.steam[1].value = sDht.val;
                 
-                const sHead = findValue('4.4 Steam Header');
+                const sHead = findValue('4.4 Steam Header', ['4.4 Header']);
                 if(sHead) newData.metrics.steam[2].value = sHead.val;
                 
-                // Map flow metrics
+                // Utilities - Flow
                 const px = findValue('PX Rate');
                 if(px) newData.metrics.flow[0].value = px.val;
                 
-                const adm1 = findValue('ADM 1 Flow');
+                const adm1 = findValue('ADM 1 Flow', ['ADM1 Flow']);
                 if(adm1) newData.metrics.flow[1].value = adm1.val;
                 
-                const adm2 = findValue('ADM 2 Flow');
+                const adm2 = findValue('ADM 2 Flow', ['ADM2 Flow']);
                 if(adm2) newData.metrics.flow[2].value = adm2.val;
                 
-                // Map efficiency metrics
-                const effPower = findValue('Total Power');
-                if (effPower) newData.efficiency.power.val = effPower.val;
+                // Oxidation Efficiency
+                const totalPower = findValue('Total Power');
+                if(totalPower) newData.oxidation.efficiency[0].value = totalPower.val;
                 
-                const effHac = findValue('HAC Cons');
-                if (effHac) newData.efficiency.hac.val = effHac.val;
+                const hac = findValue('HAC Cons', ['HAC Cons.']);
+                if(hac) newData.oxidation.efficiency[1].value = hac.val;
                 
-                const effPx = findValue('Excess PX');
-                if (effPx) newData.efficiency.px.val = effPx.val;
+                const pxExcess = findValue('Excess PX');
+                if(pxExcess) newData.oxidation.efficiency[2].value = pxExcess.val;
                 
-                const effCat = findValue('CMB Catalyst');
-                if (effCat) newData.efficiency.catalyst.val = effCat.val;
+                const catalyst = findValue('CMB Catalyst');
+                if(catalyst) newData.oxidation.efficiency[3].value = catalyst.val;
                 
-                const effWwt = findValue('WWT COD');
-                if (effWwt) newData.efficiency.wwt.val = effWwt.val;
+                const catActivity = findValue('Catalyst Activity');
+                if(catActivity) newData.oxidation.efficiency[4].value = catActivity.val;
                 
-                const effWater = findValue('Demin Water');
-                if (effWater) newData.efficiency.water.val = effWater.val;
+                // Reaction parameters
+                const rxA = findValue('Rx A Temp');
+                if(rxA) newData.oxidation.reaction[0].value = rxA.val;
                 
-                // Map HSSE values
-                const alarms = findValue('DCS Alarm');
+                const rxB = findValue('Rx B Temp');
+                if(rxB) newData.oxidation.reaction[1].value = rxB.val;
+                
+                const vo2A = findValue('Rx A VO2', ['Rx A VO\u2082']);
+                if(vo2A) newData.oxidation.reaction[2].value = vo2A.val;
+                
+                const vo2B = findValue('Rx B VO2', ['Rx B VO\u2082']);
+                if(vo2B) newData.oxidation.reaction[3].value = vo2B.val;
+                
+                // Environment metrics
+                const toc = findValue('WWT Influent TOC');
+                if(toc) newData.environment.wwt[0].value = toc.val;
+                
+                const ar701 = findValue('AR701 Efficiency');
+                if(ar701) newData.environment.wwt[1].value = ar701.val;
+                
+                const cod = findValue('Final Effluent COD');
+                if(cod) newData.environment.wwt[2].value = cod.val;
+                
+                const biogas = findValue('Biogas Production');
+                if(biogas) newData.environment.wwt[3].value = biogas.val;
+                
+                // HSSE values
+                const alarms = findValue('DCS Alarm', ['DCS Alarm & Interlock', 'DCS Alarm Interlock']);
                 if (alarms) newData.hsse.alarms = alarms.val;
                 
                 const bypass = findValue('Safety Bypass');
@@ -506,45 +533,35 @@ const Dashboard = () => {
                         plantPower: getVal('Plant Power'),
                         powerGen: getVal('Power Gen'),
                         steamFlex: getVal('Steam FLEXSYS'),
-                        pxRate: getVal('PX rate'),
+                        pxRate: getVal('PX Rate'),
                         bc101a: getVal('BC101A'),
                         bc101b: getVal('BC101B'),
-                        steamDht: getVal('Steam DHT'),
+                        steamDht: getVal('Steam DHT', getVal('Steam to DHT')),
                         header44: getVal('4.4 Header'),
                         liveHeader: getVal('Live Header'),
-                        adm2: getVal('ADM2 Flow'),
-                        adm1: getVal('ADM1 Flow')
+                        adm2: getVal('ADM2 Flow', getVal('ADM2')),
+                        adm1: getVal('ADM1 Flow', getVal('ADM1'))
                     };
                 }).filter(r => r.time); 
             }
             
-            const today = new Date().toLocaleString();
+            const uploadTime = new Date().toLocaleString('en-MY', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
             setDashboardData(newData);
-            setLastUpdated(`Data updated: ${today}`);
+            setLastUpdated(`Data updated: ${uploadTime}`);
             
-            // Sync to cloud if available
-            if(isCloudAvailable && user && window.firebaseModules?.activeConfig) {
-                const { getFirestore, doc, setDoc } = window.firebaseModules;
-                const db = getFirestore();
-                const path = configSource === 'user' 
-                    ? doc(db, 'dashboard_data', 'live_status') 
-                    : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
-                
-                try {
-                    await setDoc(path, { 
-                        dashboardData: newData, 
-                        lastUpdated: today,
-                        updatedBy: user.uid
-                    });
-                    alert("Data successfully synced to cloud!");
-                } catch (error) {
-                    console.error("Cloud sync failed:", error);
-                    alert("Failed to sync to cloud. Data saved locally only.");
-                }
-            }
-            
-            // Always save to local storage
-            localStorage.setItem('rpcm_dashboard_data_v17', JSON.stringify(newData));
+            // Save to local storage
+            localStorage.setItem('rpcm_dashboard_data_v2', JSON.stringify({
+                ...newData,
+                lastUpdated: uploadTime
+            }));
             alert("Data successfully loaded and saved locally!");
         };
         
@@ -554,9 +571,9 @@ const Dashboard = () => {
         };
         
         reader.readAsBinaryString(file);
-        e.target.value = null; // Reset input to allow same file upload again
+        e.target.value = null;
     };
-    
+
     return (
         <div className="flex h-screen overflow-hidden bg-black text-gray-100 font-sans">
             <input 
@@ -603,67 +620,77 @@ const Dashboard = () => {
                 </header>
                 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                    {/* Production Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Production Metrics - Expanded with new parameters */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                         {dashboardData.production.map(p => (
                             <ProductionCard key={p.id} {...p} />
                         ))}
-                        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
-                            <div>
-                                <div className="text-gray-400 text-xs uppercase tracking-wider mb-1 font-medium">Plant Availability</div>
-                                <div className="text-3xl font-bold text-white">{dashboardData.availability.actual}%</div>
-                            </div>
-                            <div className="w-full bg-gray-800 rounded-full h-1.5 mt-2 overflow-hidden">
-                                <div 
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                        dashboardData.availability.actual < 90 ? 'bg-plant-red' : 
-                                        dashboardData.availability.actual < 95 ? 'bg-plant-orange' : 'bg-plant-green'
-                                    }`} 
-                                    style={{width: `${Math.min(dashboardData.availability.actual, 100)}%`}}
-                                ></div>
-                            </div>
-                            <div className="mt-2 text-xs flex justify-between">
-                                <span className={
-                                    dashboardData.availability.actual < 90 ? "text-red-400" : 
-                                    dashboardData.availability.actual < 95 ? "text-orange-400" : "text-green-400"
-                                }>
-                                    {dashboardData.availability.actual < dashboardData.availability.target && (
-                                        <span className="flex items-center">
-                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.848-.784 3.589-2.027a7.5 7.5 0 10-10.604-10.604c1.243.741 2.027 2.05 2.027 3.589h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Below target
-                                        </span>
-                                    )}
-                                    {dashboardData.availability.actual >= dashboardData.availability.target && "Target achieved"}
-                                </span>
-                                <span className="text-gray-500">{dashboardData.availability.target}% target</span>
-                            </div>
-                        </div>
                     </div>
                     
-                    {/* Gauges Section */}
+                    {/* Utilities Section - Grouped by type */}
                     <div>
                         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <div className="w-1 h-5 bg-plant-blue rounded-full"></div> 
-                            Real-time Process Parameters
+                            <Icons.Zap className="text-plant-orange w-5 h-5" /> 
+                            Utilities Monitoring
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            {[...dashboardData.metrics.power, ...dashboardData.metrics.steam, ...dashboardData.metrics.flow].map((m, i) => (
-                                <Gauge 
-                                    key={i} 
-                                    {...m} 
-                                    color={
-                                        i < 4 ? "text-plant-green" : 
-                                        i < 7 ? "text-plant-orange" : "text-plant-blue"
-                                    } 
-                                    icon={Icons.Activity} 
-                                />
-                            ))}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Power Metrics */}
+                            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-800">
+                                    <Icons.Zap className="text-plant-orange w-5 h-5" />
+                                    <h3 className="font-bold text-white">Power Systems</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {dashboardData.metrics.power.map((m, i) => (
+                                        <Gauge 
+                                            key={i} 
+                                            {...m} 
+                                            color={i === 0 ? "text-plant-orange" : i === 1 ? "text-plant-green" : "text-plant-blue"}
+                                            icon={Icons.Activity} 
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Steam Metrics */}
+                            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-800">
+                                    <Icons.Thermometer className="text-plant-red w-5 h-5" />
+                                    <h3 className="font-bold text-white">Steam Systems</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {dashboardData.metrics.steam.map((m, i) => (
+                                        <Gauge 
+                                            key={i} 
+                                            {...m} 
+                                            color={i === 0 ? "text-plant-red" : i === 1 ? "text-plant-orange" : "text-plant-blue"}
+                                            icon={Icons.Activity} 
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Flow Metrics */}
+                            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg">
+                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-800">
+                                    <Icons.Droplet className="text-plant-blue w-5 h-5" />
+                                    <h3 className="font-bold text-white">Flow Systems</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {dashboardData.metrics.flow.map((m, i) => (
+                                        <Gauge 
+                                            key={i} 
+                                            {...m} 
+                                            color={i === 0 ? "text-plant-blue" : "text-plant-purple"}
+                                            icon={Icons.Activity} 
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    {/* Hourly Trends Chart */}
+                    {/* Hourly Trends Chart - FIXED FOR MOBILE */}
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 flex flex-col">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -686,7 +713,7 @@ const Dashboard = () => {
                                 ))}
                             </div>
                         </div>
-                        <div className="chart-container">
+                        <div className="w-full min-h-[280px] md:min-h-[450px]">
                             {window.Recharts ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart 
@@ -694,8 +721,8 @@ const Dashboard = () => {
                                         margin={{ 
                                             top: 10, 
                                             right: 15, 
-                                            left: -10, 
-                                            bottom: 0 
+                                            left: 0, 
+                                            bottom: 25 
                                         }}
                                     >
                                         <defs>
@@ -732,39 +759,26 @@ const Dashboard = () => {
                                             tickLine={false} 
                                             axisLine={false} 
                                             interval="preserveStartEnd"
+                                            minTickGap={30}
+                                            height={40}
                                         />
                                         <YAxis 
                                             stroke="#9ca3af" 
                                             tick={{fontSize: 11, fill: '#9ca3af'}} 
                                             tickLine={false} 
                                             axisLine={false} 
-                                            width={35}
+                                            width={40}
                                         />
                                         <Tooltip content={<CustomTooltip />} />
                                         <Legend 
                                             iconType="circle" 
                                             wrapperStyle={{fontSize: '12px', paddingTop: '12px'}} 
-                                            payload={chartView === 'production' ? [
-                                                {value: 'PX Rate', type: 'circle', color: '#10b981'},
-                                                {value: 'ADM 1', type: 'circle', color: '#3b82f6'},
-                                                {value: 'ADM 2', type: 'circle', color: '#8b5cf6'}
-                                            ] : chartView === 'energy' ? [
-                                                {value: 'Plant Power', type: 'circle', color: '#f59e0b'},
-                                                {value: 'Power Gen', type: 'circle', color: '#10b981'},
-                                                {value: 'BC101A', type: 'circle', color: '#6366f1'},
-                                                {value: 'BC101B', type: 'circle', color: '#ec4899'}
-                                            ] : [
-                                                {value: 'Steam FLEX', type: 'circle', color: '#f97316'},
-                                                {value: 'Steam DHT', type: 'circle', color: '#ef4444'},
-                                                {value: '4.4 Header', type: 'circle', color: '#06b6d4'}
-                                            ]}
                                         />
                                         {chartView === 'production' && (
                                             <>
                                                 <Area type="monotone" dataKey="pxRate" name="PX Rate" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
                                                 <Area type="monotone" dataKey="adm1" name="ADM 1" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
                                                 <Area type="monotone" dataKey="adm2" name="ADM 2" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
-                                                <ReferenceLine y={60} stroke="#059669" strokeDasharray="3 3" label={{value: "Target", position: "insideTopRight", fill: "#059669"}} />
                                             </>
                                         )}
                                         {chartView === 'energy' && (
@@ -773,7 +787,6 @@ const Dashboard = () => {
                                                 <Area type="monotone" dataKey="powerGen" name="Power Gen" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGreen)" />
                                                 <Area type="monotone" dataKey="bc101a" name="BC101A" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
                                                 <Area type="monotone" dataKey="bc101b" name="BC101B" stroke="#ec4899" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
-                                                <ReferenceLine y={20} stroke="#f59e0b" strokeDasharray="3 3" label={{value: "Plant Target", position: "insideTopRight", fill: "#f59e0b"}} />
                                             </>
                                         )}
                                         {chartView === 'steam' && (
@@ -781,7 +794,6 @@ const Dashboard = () => {
                                                 <Area type="monotone" dataKey="steamFlex" name="Steam FLEX" stroke="#f97316" strokeWidth={2} fillOpacity={1} fill="url(#colorOrange)" />
                                                 <Area type="monotone" dataKey="steamDht" name="Steam DHT" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorRed)" />
                                                 <Area type="monotone" dataKey="header44" name="4.4 Header" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorCyan)" />
-                                                <ReferenceLine y={6} stroke="#06b6d4" strokeDasharray="3 3" label={{value: "Header Target", position: "insideTopRight", fill: "#06b6d4"}} />
                                             </>
                                         )}
                                     </AreaChart>
@@ -795,98 +807,118 @@ const Dashboard = () => {
                         </div>
                     </div>
                     
-                    {/* Bottom Section - HSSE and Efficiency */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* HSSE KPI Card */}
+                    {/* Oxidation Process Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Oxidation Efficiency */}
                         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
                             <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
                                 <div className="flex items-center gap-2">
-                                    <Icons.ShieldAlert className="text-plant-red w-5 h-5 flex-shrink-0" />
-                                    <h3 className="font-bold text-white">HSSE Performance</h3>
-                                </div>
-                                <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                                    dashboardData.hsse.alarms === 0 && dashboardData.hsse.bypass === 0 && dashboardData.hsse.limit === 0
-                                        ? 'bg-green-900/50 text-green-400'
-                                        : 'bg-red-900/50 text-red-400 animate-pulse'
-                                }`}>
-                                    {dashboardData.hsse.alarms === 0 && dashboardData.hsse.bypass === 0 && dashboardData.hsse.limit === 0
-                                        ? 'All Clear'
-                                        : 'Attention Required'
-                                    }
-                                </span>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <div className="text-gray-400 text-sm font-medium">DCS Alarms</div>
-                                        <div className="text-xs text-gray-500">Current active alarms</div>
-                                    </div>
-                                    <div className={`text-2xl font-bold font-mono ${
-                                        dashboardData.hsse.alarms > 0 ? 'text-plant-red animate-pulse' : 'text-green-400'
-                                    }`}>
-                                        {dashboardData.hsse.alarms}
-                                    </div>
-                                </div>
-                                
-                                <div className="flex justify-between items-center pt-2 border-t border-gray-800">
-                                    <div>
-                                        <div className="text-gray-400 text-sm font-medium">Safety Bypass</div>
-                                        <div className="text-xs text-gray-500">Active bypasses</div>
-                                    </div>
-                                    <div className={`text-2xl font-bold font-mono ${
-                                        dashboardData.hsse.bypass > 0 ? 'text-plant-orange animate-pulse' : 'text-green-400'
-                                    }`}>
-                                        {dashboardData.hsse.bypass}
-                                    </div>
-                                </div>
-                                
-                                <div className="flex justify-between items-center pt-2 border-t border-gray-800">
-                                    <div>
-                                        <div className="text-gray-400 text-sm font-medium">Beyond Limits</div>
-                                        <div className="text-xs text-gray-500">Operating limit excursions</div>
-                                    </div>
-                                    <div className={`text-2xl font-bold font-mono ${
-                                        dashboardData.hsse.limit > 0 ? 'text-plant-red animate-pulse' : 'text-green-400'
-                                    }`}>
-                                        {dashboardData.hsse.limit}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Efficiency KPI Card */}
-                        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
-                            <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
-                                <div className="flex items-center gap-2">
-                                    <Icons.Activity className="text-plant-blue w-5 h-5 flex-shrink-0" />
-                                    <h3 className="font-bold text-white">Process Efficiency</h3>
+                                    <Icons.Flame className="text-orange-500 w-5 h-5 flex-shrink-0" />
+                                    <h3 className="font-bold text-white">Oxidation Efficiency</h3>
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <h4 className="text-xs text-gray-500 uppercase mb-3 font-semibold tracking-wider">Oxidation Process</h4>
-                                    <div className="space-y-3">
-                                        <KpiRow label="Total Power" value={dashboardData.efficiency?.power?.val} target={dashboardData.efficiency?.power?.tgt} unit="kwh/t" inverse={true} />
-                                        <KpiRow label="HAC Consumption" value={dashboardData.efficiency?.hac?.val} target={dashboardData.efficiency?.hac?.tgt} unit="kg/t" inverse={true} />
-                                        <KpiRow label="Excess PX" value={dashboardData.efficiency?.px?.val} target={dashboardData.efficiency?.px?.tgt} unit="kg/t" inverse={true} />
-                                        <KpiRow label="CMB Catalyst" value={dashboardData.efficiency?.catalyst?.val} target={dashboardData.efficiency?.catalyst?.tgt} unit="kg/t" inverse={true} />
-                                    </div>
+                            <div className="space-y-4">
+                                {dashboardData.oxidation.efficiency.map((item, idx) => (
+                                    <KpiRow 
+                                        key={idx}
+                                        label={item.title}
+                                        value={item.value}
+                                        target={item.target}
+                                        unit={item.unit}
+                                        inverse={item.inverse}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Reaction Parameters */}
+                        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                            <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
+                                <div className="flex items-center gap-2">
+                                    <Icons.Temperature className="text-red-500 w-5 h-5 flex-shrink-0" />
+                                    <h3 className="font-bold text-white">Reaction Parameters</h3>
                                 </div>
-                                
+                            </div>
+                            
+                            <div className="space-y-4">
+                                {dashboardData.oxidation.reaction.map((item, idx) => (
+                                    <KpiRow 
+                                        key={idx}
+                                        label={item.title}
+                                        value={item.value}
+                                        target={item.target}
+                                        unit={item.unit}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Environment & WWT Section */}
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                        <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
+                            <div className="flex items-center gap-2">
+                                <Icons.Leaf className="text-green-500 w-5 h-5 flex-shrink-0" />
+                                <h3 className="font-bold text-white">Environment & WWT</h3>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {dashboardData.environment.wwt.map((item, idx) => (
+                                <div key={idx} className="bg-gray-850/50 border border-gray-800 rounded-lg p-4">
+                                    <div className="text-gray-400 text-sm font-medium mb-1">{item.title}</div>
+                                    <div className="text-2xl font-bold text-white">{item.value} <span className="text-gray-500 text-sm">{item.unit}</span></div>
+                                    {item.range && (
+                                        <div className="mt-2 text-xs text-gray-500">Range: {item.range}</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* HSSE Performance */}
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                        <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
+                            <div className="flex items-center gap-2">
+                                <Icons.ShieldAlert className="text-plant-red w-5 h-5 flex-shrink-0" />
+                                <h3 className="font-bold text-white">HSSE Performance</h3>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
                                 <div>
-                                    <h4 className="text-xs text-gray-500 uppercase mb-3 font-semibold tracking-wider">Utilities & Environment</h4>
-                                    <div className="space-y-3">
-                                        <KpiRow label="WWT COD" value={dashboardData.efficiency?.wwt?.val} target={dashboardData.efficiency?.wwt?.tgt} unit="ppm" inverse={true} />
-                                        <div className="py-2 flex justify-between border-b border-gray-800">
-                                            <span className="text-sm text-gray-300 font-medium">Demineralized Water</span>
-                                            <span className="text-lg font-bold text-white">{dashboardData.efficiency?.water?.val} <span className="text-gray-500 text-sm">m³</span></span>
-                                        </div>
-                                        <div className="py-2 flex justify-between">
-                                            <span className="text-sm text-gray-300 font-medium">Steam Consumption</span>
-                                            <span className="text-lg font-bold text-white">{(dashboardData.metrics.steam[0].value + dashboardData.metrics.steam[1].value).toFixed(1)} <span className="text-gray-500 text-sm">TPH</span></span>
-                                        </div>
-                                    </div>
+                                    <div className="text-gray-400 text-sm font-medium">DCS Alarms</div>
+                                    <div className="text-xs text-gray-500">Current active alarms</div>
+                                </div>
+                                <div className={`text-2xl font-bold font-mono ${
+                                    dashboardData.hsse.alarms > 0 ? 'text-plant-red animate-pulse' : 'text-green-400'
+                                }`}>
+                                    {dashboardData.hsse.alarms}
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+                                <div>
+                                    <div className="text-gray-400 text-sm font-medium">Safety Bypass</div>
+                                    <div className="text-xs text-gray-500">Active bypasses</div>
+                                </div>
+                                <div className={`text-2xl font-bold font-mono ${
+                                    dashboardData.hsse.bypass > 0 ? 'text-plant-orange animate-pulse' : 'text-green-400'
+                                }`}>
+                                    {dashboardData.hsse.bypass}
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+                                <div>
+                                    <div className="text-gray-400 text-sm font-medium">Beyond Limits</div>
+                                    <div className="text-xs text-gray-500">Operating limit excursions</div>
+                                </div>
+                                <div className={`text-2xl font-bold font-mono ${
+                                    dashboardData.hsse.limit > 0 ? 'text-plant-red animate-pulse' : 'text-green-400'
+                                }`}>
+                                    {dashboardData.hsse.limit}
                                 </div>
                             </div>
                         </div>
@@ -894,10 +926,7 @@ const Dashboard = () => {
                     
                     {/* Footer */}
                     <div className="text-center text-xs text-gray-600 py-4 border-t border-gray-800/50 mt-2">
-                        <p>RPCM Operations Monitor • Emerson DeltaV Integration • 
-                            {isCloudAvailable ? 'Cloud Sync Active' : 'Local Mode'} • 
-                            Data refresh: {lastUpdated.split(' - ')[1] || 'N/A'}
-                        </p>
+                        <p>RPCM Operations Monitor • Emerson DeltaV Integration</p>
                     </div>
                 </div>
             </div>
@@ -906,46 +935,188 @@ const Dashboard = () => {
 };
 
 // Helper Components
+const Icons = {
+    Zap: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    Activity: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    Thermometer: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>,
+    GaugeIcon: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>,
+    Droplet: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-2-3-2-3l-5-8-5 8s-2 1-2 3a7 7 0 0 0 7 7z"/></svg>,
+    Droplets: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.8-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>,
+    ShieldAlert: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+    TrendingUp: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+    Upload: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+    RefreshCw: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+    Key: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 9.33-2.5"/></svg>,
+    Lock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    Flame: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8.5 12.5c1.2 0 1.9-.8 1.9-2.1s-.7-2.1-1.9-2.1a2 2 0 0 0-2 2c0 1 1 2.1 2 2.1Z"/><path d="M12 17.5c1.2 0 2-.8 2-2.1s-.8-2.1-2-2.1a2 2 0 0 0-2 2c0 1 1 2.1 2 2.1Z"/><path d="M17.5 18.5c1.2 0 2-.8 2-2.1s-.8-2.1-2-2.1a2 2 0 0 0-2 2c0 1 1 2.1 2 2.1Z"/><path d="M8.5 7c1.2 0 2.4-.4 2.4-1.4 0-1-1.1-1.4-2.4-1.4S6 4.5 6 5.5 7.1 7 8.5 7Z"/><path d="M12 12c1.2 0 1.9-.8 1.9-2.1s-.7-2.1-1.9-2.1a2 2 0 0 0-2 2c0 1.1 1 2.1 2 2.1Z"/><path d="M15.5 9c1.2 0 2.4-.4 2.4-1.4 0-1-1.1-1.4-2.4-1.4S13 6.5 13 7.5 14.1 9 15.5 9Z"/></svg>,
+    Temperature: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M14 18a3.5 3.5 0 0 0-7 0v2h7v-2Z"/></svg>,
+    Leaf: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 12.5a3.5 3.5 0 0 0-1.5 6.63 1 1 0 1 1-1.79-1.06 1.5 1.5 0 0 1 3.29-.97 7 7 0 1 0 0-13 7.5 7.5 0 0 0-10 7.5c.77.99.9 2.31.3 3.46-1.46 2.8-4.22 4.39-7.09 4.37"/></svg>
+};
+
+const RpcmLogo = ({ className }) => (
+    <svg viewBox="0 0 200 180" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 5 L190 50 V140 L100 185 L10 140 V50 L100 5Z" stroke="currentColor" strokeWidth="12" strokeLinejoin="round"/>
+        <path d="M25 65 L175 65" stroke="currentColor" strokeWidth="2" opacity="0.5"/> 
+        <path d="M25 125 L175 125" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
+        <text x="100" y="115" textAnchor="middle" fill="currentColor" fontSize="52" fontWeight="bold" fontFamily="Arial, sans-serif" letterSpacing="2">RPCM</text>
+    </svg>
+);
+
 const Gauge = ({ value, max, title, unit, color, icon: Icon }) => {
-    // Implementation remains the same
-    // This is just a placeholder for the actual implementation
-    return <div></div>;
+    const normalizedValue = Math.min(Math.max(value || 0, 0), max);
+    const percentage = normalizedValue / max;
+    const [displayVal, setDisplayVal] = useState(0);
+    
+    useEffect(() => {
+        // Animate the value change
+        let start = displayVal;
+        let end = value || 0;
+        let duration = 1000; // 1 second
+        let startTime = null;
+        
+        const animationFrame = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            const ease = progress < 0.5 
+                ? 2 * progress * progress 
+                : -1 + (4 - 2 * progress) * progress;
+            
+            setDisplayVal(start + (end - start) * ease);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animationFrame);
+            }
+        };
+        
+        requestAnimationFrame(animationFrame);
+    }, [value]);
+    
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center relative overflow-hidden group">
+            <div className="flex items-center justify-between w-full mb-4 z-10">
+                <div className="flex items-center gap-2 text-gray-400 text-sm font-medium uppercase tracking-wider"><span>{title}</span></div>
+                <div className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full ${
+                        percentage > 0.9 ? 'bg-plant-red animate-pulse' : 
+                        percentage > 0.8 ? 'bg-plant-orange' : 'bg-plant-green'
+                    }`}></div>
+                </div>
+            </div>
+            <div className="relative w-48 h-28 z-10">
+                <svg viewBox="0 0 200 110" className="w-full h-full">
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#374151" strokeWidth={12} strokeLinecap="round"/>
+                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke={`url(#gradient-${title.replace(/[^a-zA-Z0-9]/g, '')})`} strokeWidth={12} strokeLinecap="round" strokeDasharray={`${Math.PI * 80}`} strokeDashoffset={`${Math.PI * 80 * (1 - percentage)}`} className="gauge-path transition-[stroke-dashoffset] duration-1000 ease-out"/>
+                    <defs><linearGradient id={`gradient-${title.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={color === 'text-plant-green' ? '#8cc63f' : color === 'text-plant-orange' ? '#d97706' : '#2563eb'} /><stop offset="100%" stopColor={color === 'text-plant-green' ? '#a3d95b' : color === 'text-plant-orange' ? '#fbbf24' : '#60a5fa'} /></linearGradient></defs>
+                </svg>
+                <div className="absolute bottom-3 left-0 text-xs text-gray-500 font-mono font-bold">0</div>
+                <div className="absolute bottom-3 right-0 text-xs text-gray-500 font-mono font-bold">{max}</div>
+                <div className="absolute bottom-0 left-0 right-0 text-center transform translate-y-1">
+                    <div className={`text-3xl font-bold ${color} font-mono`}>{displayVal?.toFixed(2)}</div>
+                    <div className="text-gray-500 text-sm font-medium">{unit}</div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const ProductionCard = ({ title, actual, target, unit }) => {
-    // Implementation remains the same
-    // This is just a placeholder for the actual implementation
-    return <div></div>;
+    const percent = target > 0 ? (actual / target) * 100 : 0;
+    const isLow = percent < 90; 
+    return (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-medium">{title}</div>
+            <div className="flex justify-between items-end mb-2">
+                <div>
+                    <span className="text-2xl font-bold text-white">{actual?.toLocaleString() || 0}</span>
+                    <span className="text-sm text-gray-500 ml-1">{unit}</span>
+                </div>
+                {target > 0 && (
+                    <div className="text-right">
+                        <div className="text-xs text-gray-500">Target</div>
+                        <div className="text-sm font-medium text-gray-300">{target?.toLocaleString() || 0}</div>
+                    </div>
+                )}
+            </div>
+            
+            {target > 0 && (
+                <>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                                isLow ? 'bg-plant-red' : 'bg-plant-green'
+                            }`} 
+                            style={{ width: `${Math.min(percent, 100)}%` }}
+                        ></div>
+                    </div>
+                    <div className="mt-2 text-xs flex justify-between">
+                        <span className={isLow ? "text-red-400 font-medium" : "text-green-400 font-medium"}>
+                            {percent.toFixed(1)}% Achieved
+                        </span>
+                    </div>
+                </>
+            )}
+        </div>
+    );
 };
 
 const KpiRow = ({ label, value, target, unit, inverse = false }) => {
-    // Implementation remains the same
-    // This is just a placeholder for the actual implementation
-    return <div></div>;
+    const formattedValue = typeof value === 'number' ? value.toFixed(2) : value;
+    const formattedTarget = typeof target === 'number' ? target.toFixed(2) : target;
+    
+    let diff = 0;
+    let isGood = false;
+    
+    if (typeof value === 'number' && typeof target === 'number' && target !== 0) {
+        diff = ((value - target) / target) * 100;
+        isGood = inverse ? value <= target : value >= target;
+    }
+    
+    return (
+        <div className="flex justify-between items-center py-3 border-b border-gray-800 last:border-0">
+            <span className="text-sm text-gray-300">{label}</span>
+            <div className="flex items-center gap-4">
+                <div className="text-right">
+                    <div className="text-sm font-mono font-bold text-white">{formattedValue} <span className="text-gray-500 text-xs">{unit}</span></div>
+                    {target && <div className="text-xs text-gray-500">tgt: {formattedTarget}</div>}
+                </div>
+                {target && typeof value === 'number' && (
+                    <div className={`text-xs px-2 py-1 rounded font-medium w-16 text-center ${
+                        isGood ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+                    }`}>
+                        {isGood ? 'OK' : `${Math.abs(diff).toFixed(1)}%`}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    // Implementation remains the same
-    // This is just a placeholder for the actual implementation
-    return <div></div>;
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-gray-800 p-3 border border-gray-700 rounded shadow-lg text-xs z-50 max-w-xs">
+                <p className="text-gray-400 mb-1 font-bold">{label}</p>
+                {payload.map((pld, idx) => (
+                    <div key={idx} style={{ color: pld.color }} className="flex items-center gap-2 py-0.5">
+                        <span className="font-medium">{pld.name}:</span>
+                        <span className="font-mono font-bold">{pld.value}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
 };
 
-// App component
-const App = () => {
-    const [authenticated, setAuthenticated] = useState(false);
-    
-    useEffect(() => {
-        // Check authentication on mount
-        if (sessionStorage.getItem('rpcm_authenticated') === 'true') {
-            setAuthenticated(true);
-        }
-    }, []);
-    
-    if (!authenticated) {
-        return <PasswordGate onLogin={() => setAuthenticated(true)} />;
-    }
-    
-    return <Dashboard />;
+// Firebase configuration
+const USER_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB5gFPpiFHvG4LnF2KhDQVa6R98cTb-cfA",
+    authDomain: "rpcm-dashboard.firebaseapp.com",
+    projectId: "rpcm-dashboard",
+    storageBucket: "rpcm-dashboard.firebasestorage.app",
+    messagingSenderId: "718536830642",
+    appId: "1:718536830642:web:7c34bf37017efe40e5a3ab",
+    measurementId: "G-V7Y09MT8ET"
 };
 
 // Initialize the app
