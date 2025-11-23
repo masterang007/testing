@@ -253,59 +253,121 @@ const Dashboard = () => {
 
     //  initialization and data syncing
 useEffect(() => {
-        if (!firebaseAvailable) {
+    const {
+        initializeApp,
+        getAuth,
+        signInAnonymously,
+        signInWithCustomToken, // Added missing import
+        onAuthStateChanged,
+        getFirestore,
+        doc,
+        onSnapshot
+    } = window.firebaseModules;
+
+    // Check if Firebase modules are available
+    if (!initializeApp || !getAuth || !getFirestore) {
+        console.error("Firebase modules not available");
+        fallbackToLocal();
+        return;
+    }
+
+    let authUnsubscribe = null;
+    let snapshotUnsubscribe = null;
+    let app = null;
+
+    const cleanup = () => {
+        if (snapshotUnsubscribe) {
+            snapshotUnsubscribe();
+            snapshotUnsubscribe = null;
+        }
+        if (authUnsubscribe) {
+            authUnsubscribe();
+            authUnsubscribe = null;
+        }
+    };
+
+    const initializeFirebase = async () => {
+        if (!activeConfig) {
             fallbackToLocal();
             return;
         }
+
+        setIsCloudAvailable(true);
         
-        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
-        let unsubscribe = null;
-        
-        if (USER_FIREBASE_CONFIG) {
-            setIsCloudAvailable(true);
-            try {
-                const app = initializeApp(USER_FIREBASE_CONFIG);
-                const auth = getAuth(app);
-                const db = getFirestore(app);
-                
-                const path = doc(db, 'dashboard_data', 'live_status');
-                
-                signInAnonymously(auth).catch(() => fallbackToLocal());
-                
-                onAuthStateChanged(auth, (u) => {
-                    if (u) {
-                        setUser(u);
-                        
-                        unsubscribe = onSnapshot(path, (docSnap) => {
+        try {
+            // Initialize Firebase app
+            app = initializeApp(activeConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            // Determine the document path
+            const path = configSource === 'user' 
+                ? doc(db, 'dashboard_data', 'live_status') 
+                : doc(db, 'artifacts', (window.__app_id || 'default'), 'public', 'data', 'dashboard_state', 'current_state');
+
+            // Authentication
+            if (configSource === 'canvas' && window.__initial_auth_token) {
+                await signInWithCustomToken(auth, window.__initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            // Set up auth state listener
+            authUnsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    setUser(user);
+                    
+                    // Set up real-time listener for document changes
+                    snapshotUnsubscribe = onSnapshot(path, 
+                        (docSnap) => {
                             if (docSnap.exists()) {
-                                const d = docSnap.data();
-                                if (d.dashboardData) {
-                                    setDashboardData(d.dashboardData);
+                                const data = docSnap.data();
+                                if (data.dashboardData) {
+                                    setDashboardData(data.dashboardData);
                                 }
-                                if (d.lastUpdated) {
-                                    setLastUpdated(d.lastUpdated);
+                                if (data.lastUpdated) {
+                                    setLastUpdated(data.lastUpdated);
+                                }
+                                if (data.lastUploaded) {
+                                    setLastUploaded(data.lastUploaded);
                                 }
                             } else {
                                 setLastUpdated("Waiting for cloud data...");
                             }
-                        }, (error) => {
+                        },
+                        (error) => {
                             console.error("Cloud sync error:", error);
                             fallbackToLocal();
-                        });
-                    }
-                });
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                fallbackToLocal();
-            }
-        } else {
+                        }
+                    );
+                } else {
+                    // No user authenticated
+                    fallbackToLocal();
+                }
+            });
+
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
             fallbackToLocal();
         }
-        
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-    }, []);
+    };
+
+    initializeFirebase();
+
+    // Cleanup function
+    return () => {
+        cleanup();
+        if (app) {
+            try {
+                // Firebase doesn't have a direct delete app method in all versions
+                // but this ensures proper cleanup
+                app.delete?.();
+            } catch (error) {
+                console.warn("Error cleaning up Firebase app:", error);
+            }
+        }
+    };
+}, [activeConfig, configSource]); // Added dependencies
 
     // Fallback to local storage when cloud is unavailable
     const fallbackToLocal = () => {
