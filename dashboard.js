@@ -1108,6 +1108,17 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+// Firebase configuration
+const USER_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB5gFPpiFHvG4LnF2KhDQVa6R98cTb-cfA",
+    authDomain: "rpcm-dashboard.firebaseapp.com",
+    projectId: "rpcm-dashboard",
+    storageBucket: "rpcm-dashboard.firebasestorage.app",
+    messagingSenderId: "718536830642",
+    appId: "1:718536830642:web:7c34bf37017efe40e5a3ab",
+    measurementId: "G-V7Y09MT8ET"
+};
+
 // Initialize the app
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
