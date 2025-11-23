@@ -18,13 +18,13 @@ import {
 
 // Firebase configuration
 const USER_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyB5gFPpiFHvG4LnF2KhDQVa6R98cTb-cfA",
-    authDomain: "rpcm-dashboard.firebaseapp.com",
-    projectId: "rpcm-dashboard",
-    storageBucket: "rpcm-dashboard.firebasestorage.app",
-    messagingSenderId: "718536830642",
-    appId: "1:718536830642:web:7c34bf37017efe40e5a3ab",
-    measurementId: "G-V7Y09MT8ET"
+  apiKey: "AIzaSyB5gFPpiFHvG4LnF2KhDQVa6R98cTb-cfA", // Unique to your registered web app
+  authDomain: "rpcm-new-dashboard.firebaseapp.com",
+  projectId: "rpcm-new-dashboard",
+  storageBucket: "rpcm-new-dashboard.firebasestorage.app",
+  messagingSenderId: "777004713762",
+  appId: "1:718536830642:web:7c34bf37017efe40e5a3ab", // Unique to your registered web app
+  measurementId: "G-514074652"
 };
 
 let activeConfig = null;
