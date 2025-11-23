@@ -1,37 +1,71 @@
-body {
-    background-color: #0d1117;
-    color: #f3f4f6;
-    font-family: 'Inter', system-ui, sans-serif;
-    margin: 0;
-    padding: 0;
-    height: 100vh;
+::-webkit-scrollbar { 
+    width: 8px; 
+}
+
+::-webkit-scrollbar-track { 
+    background: #1f2937; 
+}
+
+::-webkit-scrollbar-thumb { 
+    background: #4b5563; 
+    border-radius: 4px; 
+}
+
+::-webkit-scrollbar-thumb:hover { 
+    background: #6b7280; 
+}
+
+/* Recharts Override */
+.recharts-cartesian-grid-horizontal line, 
+.recharts-cartesian-grid-vertical line { 
+    stroke: #374151; 
+}
+
+.recharts-text { 
+    fill: #9ca3af; 
+    font-size: 11px; 
+}
+
+/* Gauge Animation */
+.gauge-path { 
+    transition: stroke-dashoffset 1s ease-out; 
+}
+
+.recharts-tooltip-wrapper { 
+    z-index: 50; 
+}
+
+/* Refresh Button Animation */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 2s linear infinite;
+}
+
+/* Fix root for mobile */
+html, body, #root {
+    height: 100%;
     overflow: hidden;
 }
 
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #1f2937;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background-color: #0d1117;
 }
 
 .chart-container {
     width: 100%;
-    min-height: 250px;
+    height: auto;
+    min-height: 300px;
 }
 
 @media (min-width: 768px) {
     .chart-container {
+        min-height: 450px;
         height: 450px;
     }
 }
