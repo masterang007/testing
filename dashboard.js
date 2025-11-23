@@ -647,7 +647,7 @@ const Dashboard = () => {
                     <div>
                         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                             <Icons.Zap className="text-plant-orange w-5 h-5" /> 
-                            Utilities Monitoring
+                            Average Reading Utilities (12Hrs)
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Power Metrics */}
