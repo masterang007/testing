@@ -252,60 +252,61 @@ const Dashboard = () => {
     };
 
     //  initialization and data syncing
-    useEffect(() => {
-        if (!firebaseAvailable) {
-            fallbackToLocal();
-            return;
-        }
-        
-        const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
-        let unsubscribe = null;
-        
-        if (USER_FIREBASE_CONFIG) {
-            setIsCloudAvailable(true);
-            try {
-                const app = initializeApp(USER_FIREBASE_CONFIG);
-                const auth = getAuth(app);
-                const db = getFirestore(app);
+            useEffect(() => {
+                const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
+                let unsubscribe = null;
                 
-                const path = doc(db, 'dashboard_data', 'live_status');
-                
-                signInAnonymously(auth).catch(() => fallbackToLocal());
-                
-                onAuthStateChanged(auth, (u) => {
-                    if (u) {
-                        setUser(u);
+                if (activeConfig) {
+                    setIsCloudAvailable(true);
+                    try {
+                        const app = initializeApp(activeConfig);
+                        const auth = getAuth(app);
+                        const db = getFirestore(app);
                         
-                        unsubscribe = onSnapshot(path, (docSnap) => {
-                            if (docSnap.exists()) {
-                                const d = docSnap.data();
-                                if (d.dashboardData) {
-                                    setDashboardData(d.dashboardData);
-                                }
-                                if (d.lastUpdated) {
-                                    setLastUpdated(d.lastUpdated);
-                                }
-                            } else {
-                                setLastUpdated("Waiting for cloud data...");
+                        const path = configSource === 'user' 
+                            ? doc(db, 'dashboard_data', 'live_status') 
+                            : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
+                        
+                        signInAnonymously(auth).catch(() => fallbackToLocal());
+                        
+                        onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setUser(u);
+                                
+                                unsubscribe = onSnapshot(path, (docSnap) => {
+                                    if (docSnap.exists()) {
+                                        const d = docSnap.data();
+                                        if (d.dashboardData) {
+                                            setDashboardData(d.dashboardData);
+                                        }
+                                        if (d.lastUpdated) {
+                                            setLastUpdated(d.lastUpdated);
+                                        }
+                                        if (d.lastUploaded) {
+                                            setLastUploaded(d.lastUploaded);
+                                        }
+                                    } else {
+                                        setLastUpdated("Waiting for cloud data...");
+                                    }
+                                }, (error) => {
+                                    console.error("Cloud sync error:", error);
+                                    fallbackToLocal();
+                                });
                             }
-                        }, (error) => {
-                            console.error("Cloud sync error:", error);
-                            fallbackToLocal();
                         });
+                    } catch (error) {
+                        console.error("Firebase initialization error:", error);
+                        fallbackToLocal();
                     }
-                });
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                fallbackToLocal();
-            }
-        } else {
-            fallbackToLocal();
-        }
-        
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-    }, []);
+                } else {
+                    fallbackToLocal();
+                }
+                
+                return () => {
+                    if (unsubscribe) unsubscribe();
+                };
+            }, []);
+
     // Fallback to local storage when cloud is unavailable
     const fallbackToLocal = () => {
         setIsCloudAvailable(false);
@@ -647,7 +648,7 @@ const Dashboard = () => {
                     <div>
                         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                             <Icons.Zap className="text-plant-orange w-5 h-5" /> 
-                            Average Reading Utilities (12Hrs)
+                            Utilities Monitoring
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Power Metrics */}
@@ -1143,16 +1144,29 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// Firebase configuration
-const USER_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
-  authDomain: "rpcm-new-dashboard.firebaseapp.com",
-  projectId: "rpcm-new-dashboard",
-  storageBucket: "rpcm-new-dashboard.firebasestorage.app",
-  messagingSenderId: "777004713762",
-  appId: "1:777004713762:web:3111d9be6b4bef03f0477b",
-  measurementId: "G-XY30GVK3VW"
-};
+        // Updated Firebase Configuration
+        const USER_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
+            authDomain: "rpcm-new-dashboard.firebaseapp.com",
+            projectId: "rpcm-new-dashboard",
+            storageBucket: "rpcm-new-dashboard.firebasestorage.app",
+            messagingSenderId: "777004713762",
+            appId: "1:777004713762:web:3111d9be6b4bef03f0477b",
+            measurementId: "G-XY30GVK3VW"
+        };
+        
+        let activeConfig = null;
+        let configSource = 'offline';
+        
+        if (USER_FIREBASE_CONFIG) { 
+            activeConfig = USER_FIREBASE_CONFIG; 
+            configSource = 'user'; 
+        } else if (typeof __firebase_config !== 'undefined') { 
+            try { 
+                activeConfig = JSON.parse(__firebase_config); 
+                configSource = 'canvas'; 
+            } catch(e) {} 
+        }
 
 // Initialize the app
 const root = ReactDOM.createRoot(document.getElementById('root'));
