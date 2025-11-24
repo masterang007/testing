@@ -147,7 +147,7 @@
                         <div className="text-center mb-8">
                             <RpcmLogo className="w-24 h-24 text-plant-green mx-auto" />
                             <h2 className="text-3xl font-bold text-white mt-2">RPCM Operations Monitor</h2>
-                            <p className="text-gray-400 mt-1">Industrial Process Control Dashboard</p>
+                            <p className="text-gray-400 mt-1">PCC Dashboard</p>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="relative">
@@ -1021,7 +1021,7 @@
                             
                             {/* Footer */}
                             <div className="text-center text-xs text-gray-600 py-4 border-t border-gray-800/50 mt-2">
-                                <p>RPCM Operations Monitor • Emerson DeltaV Integration</p>
+                                <p>RPCM Operations Monitor</p>
                             </div>
                         </div>
                     </div>
