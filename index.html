@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Operations Monitor</title>
-
-        <!-- iOS SETTINGS -->
+    <!-- iOS SETTINGS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Moniter">
@@ -16,31 +15,33 @@
     <link rel="apple-touch-icon" href="image_0.png">
     <link rel="icon" type="image/png" sizes="192x192" href="image_0.png">
     <link rel="icon" type="image/png" sizes="512x512" href="image_0.png">
-
-    <!-- React & ReactDOM (Load First) -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- CSS File -->
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
-	<script src="firebase.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased">
     <div id="root"></div>
-	<!-- LOAD Firebase SDKs BEFORE dashboard.js -->
+    
+    <!-- Firebase SDKs (loaded first) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- Firebase Initialization -->
-    <script type="module" src="firebase.js"></script>
-    <!-- Recharts Dependencies (Crucial Order) -->
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Recharts Dependencies -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
+    
     <!-- SheetJS for Excel Processing -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Firebase Initialization -->
+    <script src="firebase.js"></script>
+    
     <!-- Main Dashboard Logic -->
-    <script type="text/babel" src="dashboard.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
