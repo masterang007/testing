@@ -1152,3 +1152,332 @@ useEffect(() => {
                 <App />
             </ErrorBoundary>
         );
+
+const { useState, useEffect, useMemo } = React;
+const {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, BarChart, Bar, Cell, PieChart, Pie, Legend, RadialBarChart, RadialBar
+} = Recharts;
+const { AlertTriangle, CheckCircle, Activity, Clock, Database, Cloud, Wifi, WifiOff, RefreshCw, Server, Shield } = lucide;
+
+// --- Mock Data Generator (Keep for fallback) ---
+const generateMockData = () => {
+    const now = new Date();
+    const timeLabels = Array.from({ length: 12 }, (_, i) => {
+        const d = new Date(now.getTime() - (11 - i) * 5000);
+        return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    });
+
+    return {
+        metrics: {
+            successRate: (94 + Math.random() * 4).toFixed(1),
+            latency: Math.floor(120 + Math.random() * 60),
+            activeUsers: Math.floor(800 + Math.random() * 200),
+            errorRate: (Math.random() * 2).toFixed(2),
+            throughput: Math.floor(2000 + Math.random() * 500),
+            cpuUsage: Math.floor(40 + Math.random() * 30),
+            memoryUsage: Math.floor(60 + Math.random() * 20)
+        },
+        chartData: timeLabels.map(time => ({
+            time,
+            latency: Math.floor(100 + Math.random() * 50),
+            requests: Math.floor(200 + Math.random() * 100),
+            errors: Math.floor(Math.random() * 10)
+        })),
+        distributionData: [
+            { name: 'API Server', value: Math.floor(Math.random() * 100), color: '#8884d8' },
+            { name: 'Database', value: Math.floor(Math.random() * 100), color: '#82ca9d' },
+            { name: 'Auth Service', value: Math.floor(Math.random() * 100), color: '#ffc658' },
+            { name: 'Storage', value: Math.floor(Math.random() * 100), color: '#ff8042' }
+        ],
+        geoData: [
+            { name: 'US-East', value: Math.floor(Math.random() * 1000), fill: '#3b82f6' },
+            { name: 'EU-West', value: Math.floor(Math.random() * 800), fill: '#10b981' },
+            { name: 'Asia-Pac', value: Math.floor(Math.random() * 600), fill: '#f59e0b' },
+            { name: 'SA-East', value: Math.floor(Math.random() * 400), fill: '#ef4444' }
+        ]
+    };
+};
+
+const App = () => {
+    const [dashboardData, setDashboardData] = useState(generateMockData());
+    const [lastUpdated, setLastUpdated] = useState('Initializing...');
+    const [isCloudAvailable, setIsCloudAvailable] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState('connecting'); // connecting, connected, error, local
+
+    // --- Helper to switch to local mode ---
+    const fallbackToLocal = () => {
+        console.log("⚠️ Switching to Local Mode");
+        setConnectionStatus('local');
+        setIsCloudAvailable(false);
+        setLastUpdated(`Local Mode - ${new Date().toLocaleTimeString()}`);
+        
+        // Start local simulation loop
+        const interval = setInterval(() => {
+            setDashboardData(generateMockData());
+            setLastUpdated(`Local Mode - ${new Date().toLocaleTimeString()}`);
+        }, 3000);
+        
+        return () => clearInterval(interval);
+    };
+
+    // --- MAIN SYNC LOGIC ---
+    useEffect(() => {
+        let unsubscribe = () => {};
+
+        const startSync = async () => {
+            if (!window.firebaseModules?.db) {
+                console.warn("Firebase modules missing.");
+                return fallbackToLocal();
+            }
+
+            console.log("⚡ Starting Cloud Sync...");
+            const { db, onSnapshot, doc, setDoc } = window.firebaseModules;
+            const docRef = doc(db, 'dashboard_data', 'live_status');
+
+            try {
+                unsubscribe = onSnapshot(docRef, async (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
+                        console.log("🔥 Cloud Data Received");
+                        
+                        setConnectionStatus('connected');
+                        setIsCloudAvailable(true);
+                        
+                        if (data.dashboardData) setDashboardData(data.dashboardData);
+                        if (data.lastUpdated) setLastUpdated(`Cloud • ${data.lastUpdated}`);
+                    } else {
+                        console.log("⚠️ Document missing. Attempting to seed data...");
+                        // AUTO-SEED: If document is missing, create it!
+                        try {
+                            await setDoc(docRef, {
+                                lastUpdated: new Date().toLocaleTimeString(),
+                                dashboardData: generateMockData()
+                            });
+                            console.log("✅ Seeded initial data to Firestore!");
+                        } catch (seedErr) {
+                            console.error("Failed to seed data:", seedErr);
+                        }
+                    }
+                }, (error) => {
+                    console.error("🔥 Firebase Sync Error:", error);
+                    // Alert user to the specific error so they know to fix Rules
+                    if (error.code === 'permission-denied') {
+                        alert("Access Denied: Please check your Firestore Security Rules (set to public for testing).");
+                    }
+                    fallbackToLocal();
+                });
+            } catch (err) {
+                console.error("Setup Error:", err);
+                fallbackToLocal();
+            }
+        };
+
+        // Wait for Firebase or start immediately
+        if (window.firebaseModules && window.firebaseModules.db) {
+            startSync();
+        } else {
+            console.log("⏳ Waiting for Firebase script...");
+            window.addEventListener('firebase-ready', startSync);
+        }
+
+        return () => {
+            window.removeEventListener('firebase-ready', startSync);
+            unsubscribe();
+        };
+    }, []);
+
+    // --- RENDER HELPERS ---
+    const MetricCard = ({ title, value, subtext, icon: Icon, isGood = true }) => {
+        const diff = (Math.random() * 10 - 5).toFixed(1);
+        return (
+            <div className="bg-gray-900 border border-gray-800 p-4 rounded-xl shadow-sm hover:border-gray-700 transition-all duration-300">
+                <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 bg-gray-800 rounded-lg text-blue-400">
+                        <Icon size={18} />
+                    </div>
+                    {isGood !== undefined && (
+                        <div className={`text-xs font-mono px-2 py-1 rounded-full ${
+                            isGood ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+                        }`}>
+                            {isGood ? 'OK' : `${Math.abs(diff)}%`}
+                        </div>
+                    )}
+                </div>
+                <h3 className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{title}</h3>
+                <div className="text-2xl font-bold text-white mb-1 font-mono">{value}</div>
+                <div className="text-xs text-gray-500">{subtext}</div>
+            </div>
+        );
+    };
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-gray-800/90 backdrop-blur border border-gray-700 p-3 rounded shadow-xl text-xs z-50">
+                    <p className="text-gray-300 font-bold mb-1">{label}</p>
+                    {payload.map((pld, idx) => (
+                        <div key={idx} style={{ color: pld.color }} className="flex items-center gap-2">
+                            <span>{pld.name}:</span>
+                            <span className="font-mono">{pld.value}</span>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // --- LAYOUT ---
+    return (
+        <div className="min-h-screen bg-gray-950 text-gray-100 font-sans selection:bg-blue-500/30">
+            {/* Header */}
+            <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
+                            <Activity size={20} className="text-white" />
+                        </div>
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                            System<span className="font-light">Monitor</span>
+                        </h1>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${
+                            connectionStatus === 'connected' 
+                                ? 'bg-green-900/20 border-green-900/50 text-green-400' 
+                                : 'bg-orange-900/20 border-orange-900/50 text-orange-400'
+                        }`}>
+                            {connectionStatus === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
+                            {connectionStatus === 'connected' ? 'Cloud Sync' : 'Local Mode'}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 font-mono hidden sm:flex">
+                            <Clock size={12} />
+                            {lastUpdated}
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+                
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <MetricCard 
+                        title="Active Users" 
+                        value={dashboardData.metrics.activeUsers} 
+                        subtext="Real-time count" 
+                        icon={Shield} 
+                    />
+                    <MetricCard 
+                        title="Latency" 
+                        value={`${dashboardData.metrics.latency}ms`} 
+                        subtext="Global Average" 
+                        icon={Activity} 
+                        isGood={dashboardData.metrics.latency < 150} 
+                    />
+                    <MetricCard 
+                        title="Throughput" 
+                        value={`${(dashboardData.metrics.throughput / 1000).toFixed(1)}k`} 
+                        subtext="Req/sec" 
+                        icon={Server} 
+                    />
+                    <MetricCard 
+                        title="Success Rate" 
+                        value={`${dashboardData.metrics.successRate}%`} 
+                        subtext="Last 5 mins" 
+                        icon={CheckCircle} 
+                        isGood={parseFloat(dashboardData.metrics.successRate) > 98} 
+                    />
+                </div>
+
+                {/* Charts Area */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Traffic Chart */}
+                    <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-sm font-bold text-gray-300 flex items-center gap-2">
+                                <Database size={16} className="text-blue-500" />
+                                Traffic Overview
+                            </h2>
+                        </div>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={dashboardData.chartData}>
+                                    <defs>
+                                        <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                    <XAxis dataKey="time" stroke="#4b5563" tick={{fill: '#6b7280', fontSize: 10}} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#4b5563" tick={{fill: '#6b7280', fontSize: 10}} tickLine={false} axisLine={false} />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Area 
+                                        type="monotone" 
+                                        dataKey="requests" 
+                                        stroke="#3b82f6" 
+                                        strokeWidth={2}
+                                        fillOpacity={1} 
+                                        fill="url(#colorRequests)" 
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="latency" 
+                                        stroke="#10b981" 
+                                        strokeWidth={2} 
+                                        dot={false} 
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Distribution Chart */}
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm">
+                        <h2 className="text-sm font-bold text-gray-300 mb-6 flex items-center gap-2">
+                            <Cloud size={16} className="text-purple-500" />
+                            Load Distribution
+                        </h2>
+                        <div className="h-[300px] w-full flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={dashboardData.distributionData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {dashboardData.distributionData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend 
+                                        verticalAlign="bottom" 
+                                        height={36} 
+                                        iconType="circle"
+                                        wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+};
+
+// Initialize the app with error boundary
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);
