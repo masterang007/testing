@@ -7,7 +7,7 @@
     <!-- iOS SETTINGS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Moniter">
+    <meta name="apple-mobile-web-app-title" content="Monitor">
     <!-- ANDROID SETTINGS -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f172a">
@@ -23,25 +23,23 @@
 <body class="bg-gray-950 text-gray-100 antialiased">
     <div id="root"></div>
     
-    <!-- Firebase SDKs (loaded first) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
-    <!-- React & ReactDOM -->
+    <!-- React & ReactDOM (Load First) -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     
-    <!-- Recharts Dependencies -->
+    <!-- Firebase SDKs (Load Next) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <!-- Other Dependencies -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
-    
-    <!-- SheetJS for Excel Processing -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <!-- Firebase Initialization -->
     <script src="firebase.js"></script>
     
-    <!-- Main Dashboard Logic -->
+    <!-- Main Dashboard -->
     <script src="dashboard.js"></script>
 </body>
 </html>
