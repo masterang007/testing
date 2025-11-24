@@ -385,32 +385,36 @@ const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsiv
 useEffect(() => {
     let unsubscribe = () => {};
     let isSubscribed = true;
+    let fallbackTimeout;
     
     const initializeFirebaseSync = () => {
-        // Direct check for Firebase availability
+        // Check if Firebase is available
         if (!window.isFirebaseAvailable?.()) {
-            console.warn("Firebase not available, falling back to local storage");
+            console.log("Firebase not available, using local storage");
             fallbackToLocal();
             return;
         }
-
-        console.log("Starting Firebase Sync...");
+        
         try {
-            const { db, onSnapshot, doc } = window.firebaseModules;
+            const { db, onSnapshot, doc } = window.firebaseModules || {};
+            if (!db || !onSnapshot || !doc) {
+                console.log("Firebase modules not properly initialized");
+                fallbackToLocal();
+                return;
+            }
+            
             const docRef = doc(db, 'dashboard_data', 'live_status');
+            console.log("Starting Firebase sync...");
             
             unsubscribe = onSnapshot(docRef, (snapshot) => {
                 if (!isSubscribed) return;
                 
                 if (snapshot.exists()) {
                     const data = snapshot.data();
-                    console.log("🔥 Data Received from Firebase:", data);
+                    console.log("✅ Data received from Firebase:", data);
                     
                     if (data.dashboardData && isSubscribed) {
-                        setDashboardData(prevData => ({
-                            ...prevData,
-                            ...data.dashboardData
-                        }));
+                        setDashboardData(data.dashboardData);
                     }
                     
                     if (data.lastUpdated && isSubscribed) {
@@ -419,17 +423,17 @@ useEffect(() => {
                     
                     setIsCloudAvailable(true);
                 } else {
-                    console.log("⚠️ Connected to Firebase, but document is empty.");
+                    console.log("⚠️ Firebase document exists but is empty");
                     fallbackToLocal();
                 }
             }, (error) => {
-                console.error("Firebase sync error:", error);
+                console.error("🔥 Firebase sync error:", error);
                 if (isSubscribed) {
                     fallbackToLocal();
                 }
             });
         } catch (error) {
-            console.error("Error initializing Firebase sync:", error);
+            console.error("🔥 Error initializing Firebase sync:", error);
             if (isSubscribed) {
                 fallbackToLocal();
             }
@@ -443,30 +447,32 @@ useEffect(() => {
         // Wait for Firebase to be ready
         const handleFirebaseReady = () => {
             if (isSubscribed && window.isFirebaseAvailable?.()) {
+                console.log("Firebase ready event received");
                 initializeFirebaseSync();
             }
         };
         
         window.addEventListener('firebase-ready', handleFirebaseReady);
         
-        // Fallback timeout
-        const fallbackTimeout = setTimeout(() => {
+        // Set timeout to fallback to local storage if Firebase takes too long
+        fallbackTimeout = setTimeout(() => {
             if (isSubscribed && !window.isFirebaseAvailable?.()) {
-                console.warn("Firebase initialization timeout, falling back to local storage");
+                console.log("Firebase initialization timeout, falling back to local storage");
                 fallbackToLocal();
             }
         }, 5000);
         
-        return () => {
-            isSubscribed = false;
-            window.removeEventListener('firebase-ready', handleFirebaseReady);
-            clearTimeout(fallbackTimeout);
-            unsubscribe();
-        };
+        // Initialize immediately if firebaseModules already exists
+        if (window.firebaseModules) {
+            console.log("Firebase modules already available");
+            initializeFirebaseSync();
+        }
     }
     
     return () => {
         isSubscribed = false;
+        window.removeEventListener('firebase-ready', handleFirebaseReady);
+        if (fallbackTimeout) clearTimeout(fallbackTimeout);
         unsubscribe();
     };
 }, []);
