@@ -1,13 +1,12 @@
-// firebase.js - Proper Firebase initialization
-document.addEventListener('DOMContentLoaded', async () => {
+// Firebase initialization
+document.addEventListener('DOMContentLoaded', function() {
     try {
-        // Import Firebase SDKs from CDN
-        const firebase = window.firebase;
-        if (!firebase) {
-            console.error("Firebase SDK not loaded");
+        // Check if Firebase is already loaded
+        if (typeof firebase === 'undefined') {
+            console.warn("Firebase SDK not loaded");
             return;
         }
-
+        
         // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
@@ -15,8 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             projectId: "YOUR_PROJECT_ID",
             storageBucket: "YOUR_PROJECT_ID.appspot.com",
             messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            measurementId: "YOUR_MEASUREMENT_ID"
+            appId: "YOUR_APP_ID"
         };
 
         // Initialize Firebase
@@ -32,8 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             db,
             doc: firebase.firestore.doc,
             onSnapshot: firebase.firestore.onSnapshot,
-            setDoc: firebase.firestore.setDoc,
-            initializeApp: firebase.initializeApp
+            setDoc: firebase.firestore.setDoc
         };
         
         console.log("Firebase initialized successfully");
@@ -44,22 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
     } catch (error) {
         console.error("Firebase initialization error:", error);
-        // Set flag that Firebase is not available
+        // Set fallback flag
         window.firebaseModules = null;
     }
 });
 
-// Load Firebase SDKs from CDN
-const firebaseSDKs = [
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js'
-];
-
-firebaseSDKs.forEach(src => {
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.onload = () => console.log(`Loaded: ${src}`);
-    script.onerror = (e) => console.error(`Error loading ${src}:`, e);
-    document.head.appendChild(script);
-});
+// Add Firebase availability check function
+window.isFirebaseAvailable = function() {
+    return !!window.firebaseModules?.db;
+};
