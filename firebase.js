@@ -1,14 +1,10 @@
-import { 
-    initializeApp 
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { 
     getAuth, 
     signInAnonymously, 
-    onAuthStateChanged, 
-    signInWithCustomToken 
+    onAuthStateChanged,
+    signInWithCustomToken
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
 import { 
     getFirestore, 
     doc, 
@@ -16,7 +12,7 @@ import {
     onSnapshot 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Firebase configuration
+// --- Configuration ---
 const USER_FIREBASE_CONFIG = {
   apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
   authDomain: "rpcm-new-dashboard.firebaseapp.com",
@@ -27,42 +23,36 @@ const USER_FIREBASE_CONFIG = {
   measurementId: "G-XY30GVK3VW"
 };
 
-// --- FIX START: Initialize Firebase Here ---
+let activeConfig = USER_FIREBASE_CONFIG;
+
+// Attempt to load from canvas environment if available
+if (typeof __firebase_config !== 'undefined') {
+    try {
+        activeConfig = JSON.parse(__firebase_config);
+    } catch (e) {
+        console.warn("Could not parse canvas config, using default.");
+    }
+}
+
+// --- Initialization (The Fix) ---
+// We initialize HERE, not in the dashboard
 const app = initializeApp(activeConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-// -------------------------------------------
 
-// Make initialized instances available globally
-window.firebaseModules = { 
-    app,     // The started app
-    db,      // The started database connection
-    auth,    // The started auth connection
-    // Keep these helpers for dashboard.js
-    doc, 
-    setDoc, 
+// Automatically sign in anonymously so data fetching works immediately
+signInAnonymously(auth).catch(err => console.error("Auth failed:", err));
+
+// --- Export to Window ---
+// This makes the 'db' and 'auth' available to your Dashboard component
+window.firebaseModules = {
+    app,
+    db,       // The active database connection
+    auth,     // The active auth connection
+    doc,
+    setDoc,
     onSnapshot,
-    signInAnonymously,
     onAuthStateChanged
 };
 
-// Tailwind config
-try {
-    tailwind.config = {
-        darkMode: 'class',
-        theme: {
-            extend: {
-                colors: {
-                    gray: { 750: '#2d3748', 850: '#1a202c', 950: '#0d1117' },
-                    plant: { green: '#8cc63f', orange: '#f59e0b', red: '#ef4444', blue: '#3b82f6', dark: '#111827' }
-                },
-                fontFamily: { 
-                    sans: ['Inter', 'system-ui', 'sans-serif'], 
-                    mono: ['Fira Code', 'monospace'] 
-                }
-            }
-        }
-    };
-} catch (e) { 
-    console.warn("Tailwind config issue", e); 
-}
+console.log("Firebase initialized globally.");
