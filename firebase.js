@@ -2,8 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { 
     getAuth, 
     signInAnonymously, 
-    onAuthStateChanged,
-    signInWithCustomToken
+    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -27,32 +26,23 @@ let activeConfig = USER_FIREBASE_CONFIG;
 
 // Attempt to load from canvas environment if available
 if (typeof __firebase_config !== 'undefined') {
-    try {
-        activeConfig = JSON.parse(__firebase_config);
-    } catch (e) {
-        console.warn("Could not parse canvas config, using default.");
-    }
+    try { activeConfig = JSON.parse(__firebase_config); } catch (e) {}
 }
 
-// --- Initialization (The Fix) ---
-// We initialize HERE, not in the dashboard
+// --- Initialization ---
+console.log("Firebase Script Started...");
 const app = initializeApp(activeConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Automatically sign in anonymously so data fetching works immediately
+// Sign in
 signInAnonymously(auth).catch(err => console.error("Auth failed:", err));
 
-// --- Export to Window ---
-// This makes the 'db' and 'auth' available to your Dashboard component
+// --- Export Global ---
 window.firebaseModules = {
-    app,
-    db,       // The active database connection
-    auth,     // The active auth connection
-    doc,
-    setDoc,
-    onSnapshot,
-    onAuthStateChanged
+    app, db, auth, doc, setDoc, onSnapshot, onAuthStateChanged
 };
 
-console.log("Firebase initialized globally.");
+// --- FIX: Dispatch Event for Dashboard ---
+console.log("Firebase initialized. Dispatching 'firebase-ready' event.");
+window.dispatchEvent(new Event('firebase-ready'));
