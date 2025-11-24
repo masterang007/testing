@@ -27,32 +27,23 @@ const USER_FIREBASE_CONFIG = {
   measurementId: "G-XY30GVK3VW"
 };
 
-let activeConfig = null;
-let configSource = 'offline';
+// --- FIX START: Initialize Firebase Here ---
+const app = initializeApp(activeConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+// -------------------------------------------
 
-if (USER_FIREBASE_CONFIG) { 
-    activeConfig = USER_FIREBASE_CONFIG; 
-    configSource = 'user'; 
-} else if (typeof __firebase_config !== 'undefined') { 
-    try { 
-        activeConfig = JSON.parse(__firebase_config); 
-        configSource = 'canvas'; 
-    } catch(e) {} 
-}
-
-// Make Firebase modules available globally
+// Make initialized instances available globally
 window.firebaseModules = { 
-    initializeApp, 
-    getAuth, 
-    signInAnonymously, 
-    onAuthStateChanged, 
-    signInWithCustomToken, 
-    getFirestore, 
+    app,     // The started app
+    db,      // The started database connection
+    auth,    // The started auth connection
+    // Keep these helpers for dashboard.js
     doc, 
     setDoc, 
     onSnapshot,
-    activeConfig,
-    configSource
+    signInAnonymously,
+    onAuthStateChanged
 };
 
 // Tailwind config
