@@ -381,13 +381,14 @@ const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsiv
                 setLastUpdated("Default demo data loaded");
             };
             
+// Replace your current useEffect with this simplified version
 useEffect(() => {
-    let unsubscribe = () => {}; // Cleanup function placeholder
-    let isSubscribed = true; // To prevent state updates after unmount
+    let unsubscribe = () => {};
+    let isSubscribed = true;
     
     const initializeFirebaseSync = () => {
-        // Check if Firebase is available
-        if (!window.firebase?.firestore) {
+        // Direct check for Firebase availability
+        if (!window.isFirebaseAvailable?.()) {
             console.warn("Firebase not available, falling back to local storage");
             fallbackToLocal();
             return;
@@ -395,17 +396,16 @@ useEffect(() => {
 
         console.log("Starting Firebase Sync...");
         try {
-            const db = firebase.firestore();
-            const docRef = db.doc('dashboard_data/live_status');
+            const { db, onSnapshot, doc } = window.firebaseModules;
+            const docRef = doc(db, 'dashboard_data', 'live_status');
             
-            unsubscribe = docRef.onSnapshot(snapshot => {
+            unsubscribe = onSnapshot(docRef, (snapshot) => {
                 if (!isSubscribed) return;
                 
-                if (snapshot.exists) {
+                if (snapshot.exists()) {
                     const data = snapshot.data();
                     console.log("🔥 Data Received from Firebase:", data);
                     
-                    // Update state with received data
                     if (data.dashboardData && isSubscribed) {
                         setDashboardData(prevData => ({
                             ...prevData,
@@ -420,16 +420,14 @@ useEffect(() => {
                     setIsCloudAvailable(true);
                 } else {
                     console.log("⚠️ Connected to Firebase, but document is empty.");
-                    // Use local data if document exists but is empty
                     fallbackToLocal();
                 }
-            }, error => {
+            }, (error) => {
                 console.error("Firebase sync error:", error);
                 if (isSubscribed) {
                     fallbackToLocal();
                 }
             });
-            
         } catch (error) {
             console.error("Error initializing Firebase sync:", error);
             if (isSubscribed) {
@@ -439,25 +437,25 @@ useEffect(() => {
     };
     
     // Check if Firebase is ready
-    if (window.firebase?.firestore) {
+    if (window.isFirebaseAvailable?.()) {
         initializeFirebaseSync();
     } else {
         // Wait for Firebase to be ready
         const handleFirebaseReady = () => {
-            if (isSubscribed) {
+            if (isSubscribed && window.isFirebaseAvailable?.()) {
                 initializeFirebaseSync();
             }
         };
         
         window.addEventListener('firebase-ready', handleFirebaseReady);
         
-        // Also set a timeout to fallback to local storage if Firebase takes too long
+        // Fallback timeout
         const fallbackTimeout = setTimeout(() => {
-            if (isSubscribed && !window.firebase?.firestore) {
+            if (isSubscribed && !window.isFirebaseAvailable?.()) {
                 console.warn("Firebase initialization timeout, falling back to local storage");
                 fallbackToLocal();
             }
-        }, 5000); // 5 second timeout
+        }, 5000);
         
         return () => {
             isSubscribed = false;
@@ -472,7 +470,6 @@ useEffect(() => {
         unsubscribe();
     };
 }, []);
-	
             // Excel file upload handler
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
