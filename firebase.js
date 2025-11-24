@@ -1,48 +1,65 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { 
-    getAuth, 
-    signInAnonymously, 
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    onSnapshot 
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// firebase.js - Proper Firebase initialization
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Import Firebase SDKs from CDN
+        const firebase = window.firebase;
+        if (!firebase) {
+            console.error("Firebase SDK not loaded");
+            return;
+        }
 
-// --- Configuration ---
-const USER_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
-  authDomain: "rpcm-new-dashboard.firebaseapp.com",
-  projectId: "rpcm-new-dashboard",
-  storageBucket: "rpcm-new-dashboard.firebasestorage.app",
-  messagingSenderId: "777004713762",
-  appId: "1:777004713762:web:3111d9be6b4bef03f0477b",
-  measurementId: "G-XY30GVK3VW"
-};
+        // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
+        };
 
-let activeConfig = USER_FIREBASE_CONFIG;
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        // Initialize Firestore
+        const db = firebase.firestore();
+        
+        // Set up Firebase modules on window for dashboard access
+        window.firebaseModules = {
+            db,
+            doc: firebase.firestore.doc,
+            onSnapshot: firebase.firestore.onSnapshot,
+            setDoc: firebase.firestore.setDoc,
+            initializeApp: firebase.initializeApp
+        };
+        
+        console.log("Firebase initialized successfully");
+        
+        // Dispatch event to signal Firebase is ready
+        const event = new Event('firebase-ready');
+        window.dispatchEvent(event);
+        
+    } catch (error) {
+        console.error("Firebase initialization error:", error);
+        // Set flag that Firebase is not available
+        window.firebaseModules = null;
+    }
+});
 
-// Attempt to load from canvas environment if available
-if (typeof __firebase_config !== 'undefined') {
-    try { activeConfig = JSON.parse(__firebase_config); } catch (e) {}
-}
+// Load Firebase SDKs from CDN
+const firebaseSDKs = [
+    'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
+    'https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js'
+];
 
-// --- Initialization ---
-console.log("Firebase Script Started...");
-const app = initializeApp(activeConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Sign in
-signInAnonymously(auth).catch(err => console.error("Auth failed:", err));
-
-// --- Export Global ---
-window.firebaseModules = {
-    app, db, auth, doc, setDoc, onSnapshot, onAuthStateChanged
-};
-
-// --- FIX: Dispatch Event for Dashboard ---
-console.log("Firebase initialized. Dispatching 'firebase-ready' event.");
-window.dispatchEvent(new Event('firebase-ready'));
+firebaseSDKs.forEach(src => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => console.log(`Loaded: ${src}`);
+    script.onerror = (e) => console.error(`Error loading ${src}:`, e);
+    document.head.appendChild(script);
+});
