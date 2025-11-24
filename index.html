@@ -89,25 +89,70 @@
         .animate-fade-in {
             animation: fade-in 0.3s ease-out forwards;
         }
+        /* Loading screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0d1117;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #ffffff;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: #8cc63f;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #8cc63f;
+        }
+        .loading-message {
+            color: #9ca3af;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased">
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-title">Operations Monitor</div>
+        <div class="loading-message">Initializing dashboard components...</div>
+    </div>
+    
     <div id="root"></div>
     
-    <!-- React & ReactDOM -->
+    <!-- Core Dependencies (Loaded First) -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
-    <!-- Other Dependencies -->
+    <!-- Utility Libraries -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
-    <script>
+    <script type="text/babel">
         // Firebase initialization
         document.addEventListener('DOMContentLoaded', function() {
             try {
@@ -120,13 +165,12 @@
                 
                 // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
                 const firebaseConfig = {
-  apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
-  authDomain: "rpcm-new-dashboard.firebaseapp.com",
-  projectId: "rpcm-new-dashboard",
-  storageBucket: "rpcm-new-dashboard.firebasestorage.app",
-  messagingSenderId: "777004713762",
-  appId: "1:777004713762:web:3111d9be6b4bef03f0477b",
-  measurementId: "G-XY30GVK3VW"
+                    apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
+                    authDomain: "rpcm-new-dashboard.firebaseapp.com",
+                    projectId: "rpcm-new-dashboard",
+                    storageBucket: "rpcm-new-dashboard.firebasestorage.app",
+                    messagingSenderId: "777004713762",
+                    appId: "1:777004713762:web:3111d9be6b4bef03f0477b"
                 };
 
                 // Initialize Firebase
@@ -214,6 +258,17 @@
             const [authenticated, setAuthenticated] = useState(false);
             
             useEffect(() => {
+                // Hide loading screen when app is ready
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 300);
+                    }
+                }, 300);
+                
                 // Check authentication on mount
                 if (sessionStorage.getItem('rpcm_authenticated') === 'true') {
                     setAuthenticated(true);
