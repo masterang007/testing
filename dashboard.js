@@ -672,7 +672,7 @@
                                 <RpcmLogo className="w-8 h-8 text-plant-green" />
                                 <div>
                                     <h1 className="font-bold text-white flex items-center gap-2">
-                                        RPCM Operations Monitor
+                                        Operations Monitor
                                         <span className={`inline-block w-2 h-2 rounded-full ${
                                             isCloudAvailable ? 'bg-green-500' : 'bg-yellow-500'
                                         }`}></span>
