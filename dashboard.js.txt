@@ -310,77 +310,7 @@
                     loadDefaultData();
                 }
             };
-            
-            // Load default demo data
-            const loadDefaultData = () => {
-                setDashboardData({
-                    production: [
-                        { id: 'cta', title: 'CTA Production', actual: 1473, target: 1808, unit: 'tonnes' },
-                        { id: 'pta', title: 'PTA Production', actual: 1733, target: 1857, unit: 'tonnes' },
-                        { id: 'availability', title: 'Plant Availability', actual: 81.4, target: 97.0, unit: '%' },
-                        { id: 'utilization', title: 'Plant Utilization', actual: 93.3, target: 100, unit: '%' },
-                        { id: 'conversion', title: 'Total Conversion Cost', actual: 83.45, target: 0, unit: 'USD' }
-                    ],
-                    metrics: {
-                        power: [
-                            { id: 'p1', title: 'Plant Power', value: 21.53, max: 30, unit: 'MW', icon: 'Zap' }, 
-                            { id: 'p2', title: 'Power Gen', value: 0.02, max: 15, unit: 'MW', icon: 'Zap' },
-                            { id: 'p3', title: 'BC101A', value: 7.25, max: 30, unit: 'MW', icon: 'Zap' },
-                            { id: 'p4', title: 'BC101B', value: 23.15, max: 30, unit: 'MW', icon: 'Zap' }
-                        ],
-                        steam: [
-                            { id: 's1', title: 'Steam FLEXSYS', value: 10.61, max: 30, unit: 'TPH', icon: 'Thermometer' }, 
-                            { id: 's2', title: 'Steam to DHT', value: 0, max: 100, unit: 'TPH', icon: 'Thermometer' },
-                            { id: 's3', title: '4.4 Steam Header', value: 50.25, max: 60, unit: 'kg/cm2', icon: 'GaugeIcon' }
-                        ],
-                        flow: [
-                            { id: 'f1', title: 'PX Rate', value: 4.89, max: 60, unit: 'TPH', icon: 'Droplet' }, 
-                            { id: 'f2', title: 'ADM 1 Flow', value: 0.28, max: 40, unit: 'TPH', icon: 'Droplets' },
-                            { id: 'f3', title: 'ADM 2 Flow', value: 0.5, max: 60, unit: 'TPH', icon: 'Droplets' }
-                        ]
-                    },
-                    oxidation: {
-                        efficiency: [
-                            { id: 'e1', title: 'Total Power', value: 275, target: 175, unit: 'kWh/t', inverse: true },
-                            { id: 'e2', title: 'HAC Cons.', value: 31.08, target: 28.3, unit: 'kg/t', inverse: true },
-                            { id: 'e3', title: 'Excess PX', value: 5.7, target: 14, unit: 'kg/t', inverse: false },
-                            { id: 'e4', title: 'CMB Catalyst', value: 0.5, target: 0.42, unit: 'kg/t', inverse: true },
-                            { id: 'e5', title: 'Catalyst Activity', value: 0.12, target: 0.10, unit: 'kg H\u2082 / 4CBA', inverse: false }
-                        ],
-                        reaction: [
-                            { id: 'r1', title: 'Rx A Temp', value: 189, target: 192.5, unit: '\xB0C', range: '190-195' },
-                            { id: 'r2', title: 'Rx B Temp', value: 166, target: 192.5, unit: '\xB0C', range: '190-195' },
-                            { id: 'r3', title: 'Rx A VO\u2082', value: 3.7, target: 4.0, unit: '% vol', range: '3.5-4.5' },
-                            { id: 'r4', title: 'Rx B VO\u2082', value: 3.9, target: 4.0, unit: '% vol', range: '3.5-4.5' }
-                        ]
-                    },
-                    environment: {
-                        wwt: [
-                            { id: 'w1', title: 'WWT Influent TOC', value: 1193, target: 2250, unit: 'ppm', range: '2000-2500' },
-                            { id: 'w2', title: 'AR701 Efficiency', value: 33, target: 90, unit: '%', inverse: false },
-                            { id: 'w3', title: 'Final Effluent COD', value: 14, target: 200, unit: 'ppm', inverse: true },
-                            { id: 'w4', title: 'Biogas Production', value: 644, unit: 'kg/hr' }
-                        ]
-                    },
-                    hsse: { alarms: 0, bypass: 2, limit: 14 },
-                    hourly: [
-                        {time: '7:00', plantPower: 20.83, powerGen: 0.03, steamFlex: 1.02, pxRate: 20.11, bc101a: 10.13, bc101b: 0.00, steamDht: 46.61, header44: 4.99, liveHeader: 5.18, adm2: 1.08, adm1: 1.10},
-                        {time: '8:00', plantPower: 21.25, powerGen: 0.03, steamFlex: 1.02, pxRate: 23.42, bc101a: 10.23, bc101b: 0.00, steamDht: 55.62, header44: 4.80, liveHeader: 4.98, adm2: 1.14, adm1: 0.43},
-                        {time: '9:00', plantPower: 21.66, powerGen: 0.03, steamFlex: 3.02, pxRate: 24.22, bc101a: 10.54, bc101b: 0.00, steamDht: 53.29, header44: 4.90, liveHeader: 5.08, adm2: 1.20, adm1: 0.35},
-                        {time: '10:00', plantPower: 21.56, powerGen: 0.03, steamFlex: 9.17, pxRate: 22.16, bc101a: 10.54, bc101b: 0.00, steamDht: 51.36, header44: 4.79, liveHeader: 4.96, adm2: 1.39, adm1: 0.27},
-                        {time: '11:00', plantPower: 21.55, powerGen: 0.03, steamFlex: 9.12, pxRate: 23.02, bc101a: 10.58, bc101b: 0.00, steamDht: 50.46, header44: 4.79, liveHeader: 4.97, adm2: 0.37, adm1: 0.20},
-                        {time: '12:00', plantPower: 21.53, powerGen: 0.03, steamFlex: 9.13, pxRate: 23.93, bc101a: 10.65, bc101b: 0.00, steamDht: 49.62, header44: 4.89, liveHeader: 5.09, adm2: 0.13, adm1: 0.14},
-                        {time: '13:00', plantPower: 21.68, powerGen: 0.03, steamFlex: 9.04, pxRate: 23.28, bc101a: 10.83, bc101b: 0.00, steamDht: 49.59, header44: 4.94, liveHeader: 5.12, adm2: 0.12, adm1: 0.14},
-                        {time: '14:00', plantPower: 21.63, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.49, bc101a: 10.80, bc101b: 0.00, steamDht: 49.19, header44: 4.92, liveHeader: 5.11, adm2: 0.13, adm1: 0.14},
-                        {time: '15:00', plantPower: 21.70, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.61, bc101a: 10.81, bc101b: 0.00, steamDht: 49.27, header44: 4.92, liveHeader: 5.10, adm2: 0.12, adm1: 0.14},
-                        {time: '16:00', plantPower: 21.71, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.55, bc101a: 10.80, bc101b: 0.00, steamDht: 49.35, header44: 4.92, liveHeader: 5.10, adm2: 0.13, adm1: 0.14},
-                        {time: '17:00', plantPower: 21.66, powerGen: 0.02, steamFlex: 9.10, pxRate: 23.46, bc101a: 10.73, bc101b: 0.00, steamDht: 49.25, header44: 4.91, liveHeader: 5.09, adm2: 0.12, adm1: 0.14},
-                        {time: '18:00', plantPower: 21.64, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.53, bc101a: 10.71, bc101b: 0.00, steamDht: 49.44, header44: 4.90, liveHeader: 5.09, adm2: 0.13, adm1: 0.14}
-                    ]
-                });
-                setLastUpdated("Default demo data loaded");
-            };
-            
+
 useEffect(() => {
         let unsubscribe = () => {}; // Cleanup function placeholder
 
