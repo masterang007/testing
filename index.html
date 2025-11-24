@@ -126,6 +126,23 @@
             color: #9ca3af;
             font-size: 16px;
         }
+        .cloud-status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .cloud-status-online {
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+        .cloud-status-offline {
+            background-color: #f59e0b;
+        }
+        .cloud-status-error {
+            background-color: #ef4444;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased">
@@ -153,7 +170,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <script type="text/babel">
-        // Initialize Firebase on DOM content load
+        // Firebase initialization
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 // Check if Firebase is available
@@ -162,13 +179,15 @@
                     window.isFirebaseAvailable = () => false;
                 } else {
                     // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
+                    // Go to https://console.firebase.google.com/ to create a project and get these values
                     const firebaseConfig = {
-                    apiKey: "AIzaSyDYHXs9Cn23FTBt4O2ogkgZzOkNVbiwZzs",
-                    authDomain: "rpcm-new-dashboard.firebaseapp.com",
-                    projectId: "rpcm-new-dashboard",
-                    storageBucket: "rpcm-new-dashboard.firebasestorage.app",
-                    messagingSenderId: "777004713762",
-                    appId: "1:777004713762:web:3111d9be6b4bef03f0477b"
+					  apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
+					  authDomain: "dashboard-fced7.firebaseapp.com",
+					  projectId: "dashboard-fced7",
+					  storageBucket: "dashboard-fced7.firebasestorage.app",
+					  messagingSenderId: "893864259222",
+					  appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
+
                     };
 
                     // Initialize Firebase
@@ -608,6 +627,7 @@
             const [user, setUser] = useState(null);
             const [isSyncing, setIsSyncing] = useState(false);
             const [isCloudAvailable, setIsCloudAvailable] = useState(false);
+            const [syncError, setSyncError] = useState(null);
             const [isRefreshing, setIsRefreshing] = useState(false);
             const [dashboardData, setDashboardData] = useState({
                 production: [
@@ -688,6 +708,9 @@
                         return false;
                     }
                     
+                    setSyncError(null);
+                    setIsSyncing(true);
+                    
                     const docRef = doc(db, 'dashboard_data', 'live_status');
                     await setDoc(docRef, {
                         dashboardData: data,
@@ -697,9 +720,12 @@
                     });
                     
                     console.log("✅ Data successfully uploaded to Firebase");
+                    setIsSyncing(false);
                     return true;
                 } catch (error) {
                     console.error("🔥 Firebase upload error:", error);
+                    setSyncError(error.message || "Unknown Firebase error");
+                    setIsSyncing(false);
                     return false;
                 }
             };
@@ -798,6 +824,7 @@
             useEffect(() => {
                 let unsubscribe = () => {}; // Cleanup function placeholder
                 let isSubscribed = true; // To prevent state updates after unmount
+                setSyncError(null);
                 
                 const initializeFirebaseSync = () => {
                     // Check if Firebase is available
@@ -835,9 +862,8 @@
                                 
                                 if (data.lastUpdated && isSubscribed) {
                                     setLastUpdated(`Cloud: ${data.lastUpdated}`);
+                                    setIsCloudAvailable(true);
                                 }
-                                
-                                setIsCloudAvailable(true);
                             } else {
                                 console.log("⚠️ Connected to Firebase, but document is empty.");
                                 // Use local data if document exists but is empty
@@ -845,12 +871,14 @@
                             }
                         }, (error) => {
                             console.error("Firebase sync error:", error);
+                            setSyncError(error.message || "Cloud sync failed");
                             if (isSubscribed) {
                                 fallbackToLocal();
                             }
                         });
                     } catch (error) {
                         console.error("Error initializing Firebase sync:", error);
+                        setSyncError(error.message || "Cloud sync failed");
                         if (isSubscribed) {
                             fallbackToLocal();
                         }
@@ -898,6 +926,7 @@
             const handleFileUpload = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                
                 const reader = new FileReader();
                 reader.onload = async (evt) => {
                     const bstr = evt.target.result;
@@ -1047,6 +1076,8 @@
                     // Update state and local storage
                     setDashboardData(newData);
                     setLastUpdated(`Data updated: ${uploadTime}`);
+                    
+                    // Save to local storage (always save locally)
                     localStorage.setItem('rpcm_dashboard_data_v2', JSON.stringify({
                         ...newData,
                         lastUpdated: uploadTime
@@ -1062,13 +1093,16 @@
                         alert("✅ Data successfully loaded and synced to cloud!");
                     } else {
                         setIsCloudAvailable(false);
-                        alert("⚠️ Data loaded and saved locally, but cloud sync failed. Other browsers won't see this data.");
+                        setSyncError("Firebase sync failed - check console for details");
+                        alert("⚠️ Data loaded and saved locally, but cloud sync failed. Other browsers won't see this data until sync is fixed.");
                     }
                 };
+                
                 reader.onerror = (e) => {
                     console.error("File read error:", e);
                     alert("Error reading file. Please try again with a valid Excel file.");
                 };
+                
                 reader.readAsBinaryString(file);
                 e.target.value = null;
             };
@@ -1090,10 +1124,17 @@
                                     <h1 className="font-bold text-white flex items-center gap-2">
                                         Operations Monitor
                                         <span className={`inline-block w-2 h-2 rounded-full ${
+                                            isSyncing ? 'bg-blue-500 animate-pulse' : 
                                             isCloudAvailable ? 'bg-green-500' : 'bg-yellow-500'
                                         }`}></span>
                                     </h1>
                                     <p className="text-xs text-gray-400">{lastUpdated}</p>
+                                    {syncError && (
+                                        <p className="text-xs text-red-400 flex items-center mt-1">
+                                            <span className="cloud-status-indicator cloud-status-error mr-1"></span>
+                                            {syncError}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1448,3 +1489,4 @@
     </script>
 </body>
 </html>
+
