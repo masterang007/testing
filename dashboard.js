@@ -381,108 +381,56 @@
                 setLastUpdated("Default demo data loaded");
             };
             
-            // Firebase initialization and data syncing
-            useEffect(() => {
-                console.log("Initializing dashboard...");
+useEffect(() => {
+        // 1. Check if Firebase was initialized in firebase.js
+        if (!window.firebaseModules || !window.firebaseModules.db) {
+            console.warn("Firebase not loaded. Falling back to local mode.");
+            fallbackToLocal();
+            return;
+        }
+
+        const { db, onSnapshot, doc, auth, onAuthStateChanged } = window.firebaseModules;
+        
+        console.log("Connecting to live dashboard data...");
+
+        // 2. Listen for Auth State (Optional, but good practice)
+        const authUnsub = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Connected as:", user.uid);
+            }
+        });
+
+        // 3. Set up the Real-time Listener
+        // IMPORTANT: Ensure 'dashboard_data' and 'live_status' match your Firestore collection/ID
+        const docRef = doc(db, 'dashboard_data', 'live_status');
+
+        const dataUnsub = onSnapshot(docRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                console.log("Live update received:", data);
+
+                // Update your state variables
+                if (data.dashboardData) setDashboardData(data.dashboardData);
+                if (data.lastUpdated) setLastUpdated(`Live: ${data.lastUpdated}`);
                 
-                if (!firebaseAvailable) {
-                    console.log("Firebase modules not available, falling back to local");
-                    fallbackToLocal();
-                    return;
-                }
-                
-                const { 
-                    initializeApp, 
-                    getApps, 
-                    getApp,
-                    getAuth, 
-                    signInAnonymously, 
-                    onAuthStateChanged, 
-                    getFirestore, 
-                    doc, 
-                    onSnapshot,
-                    activeConfig
-                } = window.firebaseModules;
-                
-                let unsubscribe = null;
-                let authUnsubscribe = null;
-                
-                // Use the config that was already loaded by firebase.txt
-                const firebaseConfig = activeConfig;
-                
-                if (!firebaseConfig) {
-                    console.error("No Firebase configuration available");
-                    fallbackToLocal();
-                    return;
-                }
-                
-                try {
-                    setIsCloudAvailable(true);
-                    console.log("Attempting Firebase initialization...");
-                    
-                    // Check if Firebase app already exists to prevent duplicate initialization
-                    let app;
-                    if (getApps().length === 0) {
-                        app = initializeApp(firebaseConfig);
-                        console.log("Firebase initialized successfully");
-                    } else {
-                        app = getApp();
-                        console.log("Using existing Firebase app");
-                    }
-                    
-                    const auth = getAuth(app);
-                    const db = getFirestore(app);
-                    const path = doc(db, 'dashboard_data', 'live_status');
-                    
-                    // Anonymous sign-in with better error handling
-                    signInAnonymously(auth).catch((error) => {
-                        console.error("Anonymous sign-in failed:", error);
-                        fallbackToLocal();
-                    });
-                    
-                    // Handle authentication state changes
-                    authUnsubscribe = onAuthStateChanged(auth, (u) => {
-                        setUser(u);
-                        if (u) {
-                            console.log("User authenticated with Firebase");
-                            // Set up real-time data listener
-                            unsubscribe = onSnapshot(path, (docSnap) => {
-                                if (docSnap.exists()) {
-                                    const d = docSnap.data();
-                                    console.log("Cloud data received:", d);
-                                    if (d.dashboardData) {
-                                        setDashboardData(d.dashboardData);
-                                    }
-                                    if (d.lastUpdated) {
-                                        setLastUpdated(`Cloud - ${d.lastUpdated}`);
-                                    }
-                                } else {
-                                    console.log("No cloud data available");
-                                    setLastUpdated("Cloud connected (no data)");
-                                }
-                            }, (error) => {
-                                console.error("Cloud sync error:", error);
-                                // Only fallback for permission or connection issues
-                                if (error.code === 'permission-denied' || error.code === 'unavailable') {
-                                    fallbackToLocal();
-                                }
-                            });
-                        } else {
-                            console.log("User not authenticated");
-                            fallbackToLocal();
-                        }
-                    });
-                } catch (error) {
-                    console.error("Firebase initialization error:", error);
-                    fallbackToLocal();
-                }
-                
-                return () => {
-                    if (unsubscribe) unsubscribe();
-                    if (authUnsubscribe) authUnsubscribe();
-                };
-            }, []); // Empty dependency array ensures this runs only once on mount
-            
+                setIsCloudAvailable(true);
+            } else {
+                console.log("Document does not exist yet. Waiting for data...");
+            }
+        }, (error) => {
+            console.error("Sync Error:", error);
+            // If permission denied or offline, fall back safely
+            fallbackToLocal();
+        });
+
+        // 4. Cleanup when the component unmounts
+        return () => {
+            authUnsub();
+            dataUnsub();
+        };
+
+    }, []); // Empty dependency array = runs once on mount
+	
             // Excel file upload handler
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
