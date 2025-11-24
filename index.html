@@ -26,9 +26,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- CSS File -->
     <link rel="stylesheet" href="styles.css">
+	<script src="firebase.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased">
     <div id="root"></div>
+	<!-- LOAD Firebase SDKs BEFORE dashboard.js -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <!-- Firebase Initialization -->
     <script type="module" src="firebase.js"></script>
     <!-- Recharts Dependencies (Crucial Order) -->
