@@ -522,76 +522,7 @@
                     loadDefaultData();
                 }
             };
-            
-            // Load default demo data
-            const loadDefaultData = () => {
-                setDashboardData({
-                    production: [
-                        { id: 'cta', title: 'CTA Production', actual: 1473, target: 1808, unit: 'tonnes' },
-                        { id: 'pta', title: 'PTA Production', actual: 1733, target: 1857, unit: 'tonnes' },
-                        { id: 'availability', title: 'Plant Availability', actual: 81.4, target: 97.0, unit: '%' },
-                        { id: 'utilization', title: 'Plant Utilization', actual: 93.3, target: 100, unit: '%' },
-                        { id: 'conversion', title: 'Total Conversion Cost', actual: 83.45, target: 0, unit: 'USD' }
-                    ],
-                    metrics: {
-                        power: [
-                            { id: 'p1', title: 'Plant Power', value: 21.53, max: 30, unit: 'MW', icon: 'Zap' }, 
-                            { id: 'p2', title: 'Power Gen', value: 0.02, max: 15, unit: 'MW', icon: 'Zap' },
-                            { id: 'p3', title: 'BC101A', value: 7.25, max: 30, unit: 'MW', icon: 'Zap' },
-                            { id: 'p4', title: 'BC101B', value: 23.15, max: 30, unit: 'MW', icon: 'Zap' }
-                        ],
-                        steam: [
-                            { id: 's1', title: 'Steam FLEXSYS', value: 10.61, max: 30, unit: 'TPH', icon: 'Thermometer' }, 
-                            { id: 's2', title: 'Steam to DHT', value: 0, max: 100, unit: 'TPH', icon: 'Thermometer' },
-                            { id: 's3', title: '4.4 Steam Header', value: 50.25, max: 60, unit: 'kg/cm2', icon: 'GaugeIcon' }
-                        ],
-                        flow: [
-                            { id: 'f1', title: 'PX Rate', value: 4.89, max: 60, unit: 'TPH', icon: 'Droplet' }, 
-                            { id: 'f2', title: 'ADM 1 Flow', value: 0.28, max: 40, unit: 'TPH', icon: 'Droplets' },
-                            { id: 'f3', title: 'ADM 2 Flow', value: 0.5, max: 60, unit: 'TPH', icon: 'Droplets' }
-                        ]
-                    },
-                    oxidation: {
-                        efficiency: [
-                            { id: 'e1', title: 'Total Power', value: 275, target: 175, unit: 'kWh/t', inverse: true },
-                            { id: 'e2', title: 'HAC Cons.', value: 31.08, target: 28.3, unit: 'kg/t', inverse: true },
-                            { id: 'e3', title: 'Excess PX', value: 5.7, target: 14, unit: 'kg/t', inverse: false },
-                            { id: 'e4', title: 'CMB Catalyst', value: 0.5, target: 0.42, unit: 'kg/t', inverse: true },
-                            { id: 'e5', title: 'Catalyst Activity', value: 0.12, target: 0.10, unit: 'kg H\u2082 / 4CBA', inverse: false }
-                        ],
-                        reaction: [
-                            { id: 'r1', title: 'Rx A Temp', value: 189, target: 192.5, unit: '\xB0C', range: '190-195' },
-                            { id: 'r2', title: 'Rx B Temp', value: 166, target: 192.5, unit: '\xB0C', range: '190-195' },
-                            { id: 'r3', title: 'Rx A VO\u2082', value: 3.7, target: 4.0, unit: '% vol', range: '3.5-4.5' },
-                            { id: 'r4', title: 'Rx B VO\u2082', value: 3.9, target: 4.0, unit: '% vol', range: '3.5-4.5' }
-                        ]
-                    },
-                    environment: {
-                        wwt: [
-                            { id: 'w1', title: 'WWT Influent TOC', value: 1193, target: 2250, unit: 'ppm', range: '2000-2500' },
-                            { id: 'w2', title: 'AR701 Efficiency', value: 33, target: 90, unit: '%', inverse: false },
-                            { id: 'w3', title: 'Final Effluent COD', value: 14, target: 200, unit: 'ppm', inverse: true },
-                            { id: 'w4', title: 'Biogas Production', value: 644, unit: 'kg/hr' }
-                        ]
-                    },
-                    hsse: { alarms: 0, bypass: 2, limit: 14 },
-                    hourly: [
-                        {time: '7:00', plantPower: 20.83, powerGen: 0.03, steamFlex: 1.02, pxRate: 20.11, bc101a: 10.13, bc101b: 0.00, steamDht: 46.61, header44: 4.99, liveHeader: 5.18, adm2: 1.08, adm1: 1.10},
-                        {time: '8:00', plantPower: 21.25, powerGen: 0.03, steamFlex: 1.02, pxRate: 23.42, bc101a: 10.23, bc101b: 0.00, steamDht: 55.62, header44: 4.80, liveHeader: 4.98, adm2: 1.14, adm1: 0.43},
-                        {time: '9:00', plantPower: 21.66, powerGen: 0.03, steamFlex: 3.02, pxRate: 24.22, bc101a: 10.54, bc101b: 0.00, steamDht: 53.29, header44: 4.90, liveHeader: 5.08, adm2: 1.20, adm1: 0.35},
-                        {time: '10:00', plantPower: 21.56, powerGen: 0.03, steamFlex: 9.17, pxRate: 22.16, bc101a: 10.54, bc101b: 0.00, steamDht: 51.36, header44: 4.79, liveHeader: 4.96, adm2: 1.39, adm1: 0.27},
-                        {time: '11:00', plantPower: 21.55, powerGen: 0.03, steamFlex: 9.12, pxRate: 23.02, bc101a: 10.58, bc101b: 0.00, steamDht: 50.46, header44: 4.79, liveHeader: 4.97, adm2: 0.37, adm1: 0.20},
-                        {time: '12:00', plantPower: 21.53, powerGen: 0.03, steamFlex: 9.13, pxRate: 23.93, bc101a: 10.65, bc101b: 0.00, steamDht: 49.62, header44: 4.89, liveHeader: 5.09, adm2: 0.13, adm1: 0.14},
-                        {time: '13:00', plantPower: 21.68, powerGen: 0.03, steamFlex: 9.04, pxRate: 23.28, bc101a: 10.83, bc101b: 0.00, steamDht: 49.59, header44: 4.94, liveHeader: 5.12, adm2: 0.12, adm1: 0.14},
-                        {time: '14:00', plantPower: 21.63, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.49, bc101a: 10.80, bc101b: 0.00, steamDht: 49.19, header44: 4.92, liveHeader: 5.11, adm2: 0.13, adm1: 0.14},
-                        {time: '15:00', plantPower: 21.70, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.61, bc101a: 10.81, bc101b: 0.00, steamDht: 49.27, header44: 4.92, liveHeader: 5.10, adm2: 0.12, adm1: 0.14},
-                        {time: '16:00', plantPower: 21.71, powerGen: 0.02, steamFlex: 9.08, pxRate: 23.55, bc101a: 10.80, bc101b: 0.00, steamDht: 49.35, header44: 4.92, liveHeader: 5.10, adm2: 0.13, adm1: 0.14},
-                        {time: '17:00', plantPower: 21.66, powerGen: 0.02, steamFlex: 9.10, pxRate: 23.46, bc101a: 10.73, bc101b: 0.00, steamDht: 49.25, header44: 4.91, liveHeader: 5.09, adm2: 0.12, adm1: 0.14},
-                        {time: '18:00', plantPower: 21.64, powerGen: 0.02, steamFlex: 9.12, pxRate: 23.53, bc101a: 10.71, bc101b: 0.00, steamDht: 49.44, header44: 4.90, liveHeader: 5.09, adm2: 0.13, adm1: 0.14}
-                    ]
-                });
-                setLastUpdated("Default demo data loaded");
-            };
+
             
             useEffect(() => {
                 let unsubscribe = () => {}; // Cleanup function placeholder
@@ -693,159 +624,174 @@
             }, []);
             
             // Excel file upload handler
-            const handleFileUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async (evt) => {
-                    const bstr = evt.target.result;
-                    const wb = XLSX.read(bstr, { type: 'binary' });
-                    const newData = { ...dashboardData };
-                    // Process Summary sheet
-                    const wsMain = wb.Sheets[wb.SheetNames[0]];
-                    if (wsMain) {
-                        const raw = XLSX.utils.sheet_to_json(wsMain, { header: 1 });
-                        const findValue = (name, alternatives = []) => {
-                            const allNames = [name, ...alternatives];
-                            const row = raw.find(r => 
-                                r[0] && typeof r[0] === 'string' && 
-                                allNames.some(n => r[0].toLowerCase().includes(n.toLowerCase()))
-                            );
-                            return row ? { 
-                                val: parseFloat(row[2]?.toString().replace(/,/g, '') || 0), 
-                                tgt: parseFloat(row[3]?.toString().replace(/,/g, '') || 0) 
-                            } : null;
-                        };
-                        // Production metrics
-                        const cta = findValue('CTA Production');
-                        if(cta) newData.production[0].actual = cta.val;
-                        const pta = findValue('PTA Production');
-                        if(pta) newData.production[1].actual = pta.val;
-                        const avail = findValue('Plant Availability');
-                        if(avail) newData.production[2].actual = avail.val;
-                        const util = findValue('Plant Utilization Rate');
-                        if(util) newData.production[3].actual = util.val;
-                        const conv = findValue('Total Conversion Cost');
-                        if(conv) newData.production[4].actual = conv.val;
-                        // Utilities - Power
-                        const plantP = findValue('Plant Power');
-                        if(plantP) newData.metrics.power[0].value = plantP.val;
-                        const pGen = findValue('Power Gen');
-                        if(pGen) newData.metrics.power[1].value = pGen.val;
-                        const bc101a = findValue('BC101A');
-                        if(bc101a) newData.metrics.power[2].value = bc101a.val;
-                        const bc101b = findValue('BC101B');
-                        if(bc101b) newData.metrics.power[3].value = bc101b.val;
-                        // Utilities - Steam
-                        const sFlex = findValue('Steam FLEXSYS');
-                        if(sFlex) newData.metrics.steam[0].value = sFlex.val;
-                        const sDht = findValue('Steam to DHT', ['Steam DHT']);
-                        if(sDht) newData.metrics.steam[1].value = sDht.val;
-                        const sHead = findValue('4.4 Steam Header', ['4.4 Header']);
-                        if(sHead) newData.metrics.steam[2].value = sHead.val;
-                        // Utilities - Flow
-                        const px = findValue('PX Rate');
-                        if(px) newData.metrics.flow[0].value = px.val;
-                        const adm1 = findValue('ADM 1 Flow', ['ADM1 Flow']);
-                        if(adm1) newData.metrics.flow[1].value = adm1.val;
-                        const adm2 = findValue('ADM 2 Flow', ['ADM2 Flow']);
-                        if(adm2) newData.metrics.flow[2].value = adm2.val;
-                        // Oxidation Efficiency
-                        const totalPower = findValue('Total Power');
-                        if(totalPower) newData.oxidation.efficiency[0].value = totalPower.val;
-                        const hac = findValue('HAC Cons', ['HAC Cons.']);
-                        if(hac) newData.oxidation.efficiency[1].value = hac.val;
-                        const pxExcess = findValue('Excess PX');
-                        if(pxExcess) newData.oxidation.efficiency[2].value = pxExcess.val;
-                        const catalyst = findValue('CMB Catalyst');
-                        if(catalyst) newData.oxidation.efficiency[3].value = catalyst.val;
-                        const catActivity = findValue('Catalyst Activity');
-                        if(catActivity) newData.oxidation.efficiency[4].value = catActivity.val;
-                        // Reaction parameters
-                        const rxA = findValue('Rx A Temp');
-                        if(rxA) newData.oxidation.reaction[0].value = rxA.val;
-                        const rxB = findValue('Rx B Temp');
-                        if(rxB) newData.oxidation.reaction[1].value = rxB.val;
-                        const vo2A = findValue('Rx A VO2', ['Rx A VO\u2082']);
-                        if(vo2A) newData.oxidation.reaction[2].value = vo2A.val;
-                        const vo2B = findValue('Rx B VO2', ['Rx B VO\u2082']);
-                        if(vo2B) newData.oxidation.reaction[3].value = vo2B.val;
-                        // Environment metrics
-                        const toc = findValue('WWT Influent TOC');
-                        if(toc) newData.environment.wwt[0].value = toc.val;
-                        const ar701 = findValue('AR701 Efficiency');
-                        if(ar701) newData.environment.wwt[1].value = ar701.val;
-                        const cod = findValue('Final Effluent COD');
-                        if(cod) newData.environment.wwt[2].value = cod.val;
-                        const biogas = findValue('Biogas Production');
-                        if(biogas) newData.environment.wwt[3].value = biogas.val;
-                        // HSSE values
-                        const alarms = findValue('DCS Alarm', ['DCS Alarm & Interlock', 'DCS Alarm Interlock']);
-                        if (alarms) newData.hsse.alarms = alarms.val;
-                        const bypass = findValue('Safety Bypass');
-                        if (bypass) newData.hsse.bypass = bypass.val;
-                        const limit = findValue('Beyond Operating Limit');
-                        if (limit) newData.hsse.limit = limit.val;
-                    }
-                    // Process Hourly Logs sheet
-                    let wsHourly = wb.Sheets["Hourly Logs"] || wb.Sheets[wb.SheetNames[1]];
-                    if (wsHourly) {
-                        const rawHourly = XLSX.utils.sheet_to_json(wsHourly);
-                        newData.hourly = rawHourly.map(row => {
-                            const getVal = (key) => {
-                                const foundKey = Object.keys(row).find(k => 
-                                    k.toLowerCase().includes(key.toLowerCase())
-                                );
-                                return foundKey ? parseFloat(row[foundKey]) || 0 : 0;
-                            };
-                            let timeVal = row['Time'];
-                            // Convert Excel time serial number to readable format if needed
-                            if (typeof timeVal === 'number') {
-                                const totalSeconds = Math.floor(timeVal * 86400);
-                                const hours = Math.floor(totalSeconds / 3600);
-                                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                                timeVal = `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;
-                            }
-                            return {
-                                time: timeVal || '',
-                                plantPower: getVal('Plant Power'),
-                                powerGen: getVal('Power Gen'),
-                                steamFlex: getVal('Steam FLEXSYS'),
-                                pxRate: getVal('PX Rate'),
-                                bc101a: getVal('BC101A'),
-                                bc101b: getVal('BC101B'),
-                                steamDht: getVal('Steam DHT', getVal('Steam to DHT')),
-                                header44: getVal('4.4 Header'),
-                                liveHeader: getVal('Live Header'),
-                                adm2: getVal('ADM2 Flow', getVal('ADM2')),
-                                adm1: getVal('ADM1 Flow', getVal('ADM1'))
-                            };
-                        }).filter(r => r.time); 
-                    }
-                    const uploadTime = new Date().toLocaleString('en-MY', { 
-                        day: '2-digit', 
-                        month: 'short', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    });
-                    setDashboardData(newData);
-                    setLastUpdated(`Data updated: ${uploadTime}`);
-                    // Save to local storage
-                    localStorage.setItem('rpcm_dashboard_data_v2', JSON.stringify({
-                        ...newData,
-                        lastUpdated: uploadTime
-                    }));
-                    alert("Data successfully loaded and saved locally!");
-                };
-                reader.onerror = (e) => {
-                    console.error("File read error:", e);
-                    alert("Error reading file. Please try again with a valid Excel file.");
-                };
-                reader.readAsBinaryString(file);
-                e.target.value = null;
+const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const newData = { ...dashboardData };
+        // Process Summary sheet
+        const wsMain = wb.Sheets[wb.SheetNames[0]];
+        if (wsMain) {
+            const raw = XLSX.utils.sheet_to_json(wsMain, { header: 1 });
+            const findValue = (name, alternatives = []) => {
+                const allNames = [name, ...alternatives];
+                const row = raw.find(r => 
+                    r[0] && typeof r[0] === 'string' && 
+                    allNames.some(n => r[0].toLowerCase().includes(n.toLowerCase()))
+                );
+                return row ? { 
+                    val: parseFloat(row[2]?.toString().replace(/,/g, '') || 0), 
+                    tgt: parseFloat(row[3]?.toString().replace(/,/g, '') || 0) 
+                } : null;
             };
+            // Production metrics
+            const cta = findValue('CTA Production');
+            if(cta) newData.production[0].actual = cta.val;
+            const pta = findValue('PTA Production');
+            if(pta) newData.production[1].actual = pta.val;
+            const avail = findValue('Plant Availability');
+            if(avail) newData.production[2].actual = avail.val;
+            const util = findValue('Plant Utilization Rate');
+            if(util) newData.production[3].actual = util.val;
+            const conv = findValue('Total Conversion Cost');
+            if(conv) newData.production[4].actual = conv.val;
+            // Utilities - Power
+            const plantP = findValue('Plant Power');
+            if(plantP) newData.metrics.power[0].value = plantP.val;
+            const pGen = findValue('Power Gen');
+            if(pGen) newData.metrics.power[1].value = pGen.val;
+            const bc101a = findValue('BC101A');
+            if(bc101a) newData.metrics.power[2].value = bc101a.val;
+            const bc101b = findValue('BC101B');
+            if(bc101b) newData.metrics.power[3].value = bc101b.val;
+            // Utilities - Steam
+            const sFlex = findValue('Steam FLEXSYS');
+            if(sFlex) newData.metrics.steam[0].value = sFlex.val;
+            const sDht = findValue('Steam to DHT', ['Steam DHT']);
+            if(sDht) newData.metrics.steam[1].value = sDht.val;
+            const sHead = findValue('4.4 Steam Header', ['4.4 Header']);
+            if(sHead) newData.metrics.steam[2].value = sHead.val;
+            // Utilities - Flow
+            const px = findValue('PX Rate');
+            if(px) newData.metrics.flow[0].value = px.val;
+            const adm1 = findValue('ADM 1 Flow', ['ADM1 Flow']);
+            if(adm1) newData.metrics.flow[1].value = adm1.val;
+            const adm2 = findValue('ADM 2 Flow', ['ADM2 Flow']);
+            if(adm2) newData.metrics.flow[2].value = adm2.val;
+            // Oxidation Efficiency
+            const totalPower = findValue('Total Power');
+            if(totalPower) newData.oxidation.efficiency[0].value = totalPower.val;
+            const hac = findValue('HAC Cons', ['HAC Cons.']);
+            if(hac) newData.oxidation.efficiency[1].value = hac.val;
+            const pxExcess = findValue('Excess PX');
+            if(pxExcess) newData.oxidation.efficiency[2].value = pxExcess.val;
+            const catalyst = findValue('CMB Catalyst');
+            if(catalyst) newData.oxidation.efficiency[3].value = catalyst.val;
+            const catActivity = findValue('Catalyst Activity');
+            if(catActivity) newData.oxidation.efficiency[4].value = catActivity.val;
+            // Reaction parameters
+            const rxA = findValue('Rx A Temp');
+            if(rxA) newData.oxidation.reaction[0].value = rxA.val;
+            const rxB = findValue('Rx B Temp');
+            if(rxB) newData.oxidation.reaction[1].value = rxB.val;
+            const vo2A = findValue('Rx A VO2', ['Rx A VO\u2082']);
+            if(vo2A) newData.oxidation.reaction[2].value = vo2A.val;
+            const vo2B = findValue('Rx B VO2', ['Rx B VO\u2082']);
+            if(vo2B) newData.oxidation.reaction[3].value = vo2B.val;
+            // Environment metrics
+            const toc = findValue('WWT Influent TOC');
+            if(toc) newData.environment.wwt[0].value = toc.val;
+            const ar701 = findValue('AR701 Efficiency');
+            if(ar701) newData.environment.wwt[1].value = ar701.val;
+            const cod = findValue('Final Effluent COD');
+            if(cod) newData.environment.wwt[2].value = cod.val;
+            const biogas = findValue('Biogas Production');
+            if(biogas) newData.environment.wwt[3].value = biogas.val;
+            // HSSE values
+            const alarms = findValue('DCS Alarm', ['DCS Alarm & Interlock', 'DCS Alarm Interlock']);
+            if (alarms) newData.hsse.alarms = alarms.val;
+            const bypass = findValue('Safety Bypass');
+            if (bypass) newData.hsse.bypass = bypass.val;
+            const limit = findValue('Beyond Operating Limit');
+            if (limit) newData.hsse.limit = limit.val;
+        }
+        // Process Hourly Logs sheet
+        let wsHourly = wb.Sheets["Hourly Logs"] || wb.Sheets[wb.SheetNames[1]];
+        if (wsHourly) {
+            const rawHourly = XLSX.utils.sheet_to_json(wsHourly);
+            newData.hourly = rawHourly.map(row => {
+                const getVal = (key) => {
+                    const foundKey = Object.keys(row).find(k => 
+                        k.toLowerCase().includes(key.toLowerCase())
+                    );
+                    return foundKey ? parseFloat(row[foundKey]) || 0 : 0;
+                };
+                let timeVal = row['Time'];
+                // Convert Excel time serial number to readable format if needed
+                if (typeof timeVal === 'number') {
+                    const totalSeconds = Math.floor(timeVal * 86400);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    timeVal = `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;
+                }
+                return {
+                    time: timeVal || '',
+                    plantPower: getVal('Plant Power'),
+                    powerGen: getVal('Power Gen'),
+                    steamFlex: getVal('Steam FLEXSYS'),
+                    pxRate: getVal('PX Rate'),
+                    bc101a: getVal('BC101A'),
+                    bc101b: getVal('BC101B'),
+                    steamDht: getVal('Steam DHT', getVal('Steam to DHT')),
+                    header44: getVal('4.4 Header'),
+                    liveHeader: getVal('Live Header'),
+                    adm2: getVal('ADM2 Flow', getVal('ADM2')),
+                    adm1: getVal('ADM1 Flow', getVal('ADM1'))
+                };
+            }).filter(r => r.time); 
+        }
+        const uploadTime = new Date().toLocaleString('en-MY', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        
+        // Update local state
+        setDashboardData(newData);
+        setLastUpdated(`Data updated: ${uploadTime}`);
+        
+        // Save to local storage
+        localStorage.setItem('rpcm_dashboard_data_v2', JSON.stringify({
+            ...newData,
+            lastUpdated: uploadTime
+        }));
+        
+        // Try to upload to Firebase
+        const cloudSuccess = await uploadDataToFirebase(newData, uploadTime);
+        
+        // Show appropriate message
+        if (cloudSuccess) {
+            setIsCloudAvailable(true);
+            setLastUpdated(`Cloud synced: ${uploadTime}`);
+            alert("✅ Data successfully loaded and synced to cloud!");
+        } else {
+            setIsCloudAvailable(false);
+            alert("⚠️ Data loaded and saved locally, but cloud sync failed. Check your internet connection.");
+        }
+    };
+    reader.onerror = (e) => {
+        console.error("File read error:", e);
+        alert("Error reading file. Please try again with a valid Excel file.");
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = null;
+};
             
             return (
                 <div className="flex h-screen overflow-hidden bg-black text-gray-100 font-sans">
