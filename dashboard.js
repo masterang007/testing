@@ -46,11 +46,11 @@
             }
         }
 
-        const { useState, useEffect, useMemo, useRef } = React;
-        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
+const { useState, useEffect, useMemo, useRef } = React;
+const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
         
         // Firebase initialization check
-        const firebaseAvailable = window.firebaseModules && window.firebaseModules.initializeApp;
+        const firebaseAvailable = !!window.firebaseModules;
         
         // Main App Component
         const App = () => {
@@ -382,52 +382,96 @@
             };
             
 useEffect(() => {
-        let unsubscribe = () => {}; // Cleanup function placeholder
-
-        const startSync = () => {
-            if (!window.firebaseModules?.db) return;
-
-            console.log("Starting Firebase Sync...");
-            const { db, onSnapshot, doc } = window.firebaseModules;
-            
-            // TARGET: collection = 'dashboard_data', doc = 'live_status'
-            const docRef = doc(db, 'dashboard_data', 'live_status');
-
-            unsubscribe = onSnapshot(docRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    console.log("🔥 Data Received:", data);
-                    
-                    // Update State
-                    if (data.dashboardData) setDashboardData(data.dashboardData);
-                    if (data.lastUpdated) setLastUpdated(`Cloud: ${data.lastUpdated}`);
-                    setIsCloudAvailable(true);
-                } else {
-                    console.log("⚠️ Connected, but document 'dashboard_data/live_status' is empty.");
-                    // Optional: Create the document if it's missing (for testing)
-                    // window.firebaseModules.setDoc(docRef, { lastUpdated: new Date().toISOString(), dashboardData: {} });
-                }
-            }, (error) => {
-                console.error("Sync Error:", error);
-                fallbackToLocal();
-            });
-        };
-
-        // --- WAIT LOGIC ---
-        if (window.firebaseModules && window.firebaseModules.db) {
-            // If Firebase is already ready, start immediately
-            startSync();
-        } else {
-            // Otherwise, wait for the signal
-            console.log("Waiting for Firebase to load...");
-            window.addEventListener('firebase-ready', startSync);
+    let unsubscribe = () => {}; // Cleanup function placeholder
+    let isSubscribed = true; // To prevent state updates after unmount
+    
+    const initializeFirebaseSync = () => {
+        // Check if Firebase is available
+        if (!window.firebase?.firestore) {
+            console.warn("Firebase not available, falling back to local storage");
+            fallbackToLocal();
+            return;
         }
 
+        console.log("Starting Firebase Sync...");
+        try {
+            const db = firebase.firestore();
+            const docRef = db.doc('dashboard_data/live_status');
+            
+            unsubscribe = docRef.onSnapshot(snapshot => {
+                if (!isSubscribed) return;
+                
+                if (snapshot.exists) {
+                    const data = snapshot.data();
+                    console.log("🔥 Data Received from Firebase:", data);
+                    
+                    // Update state with received data
+                    if (data.dashboardData && isSubscribed) {
+                        setDashboardData(prevData => ({
+                            ...prevData,
+                            ...data.dashboardData
+                        }));
+                    }
+                    
+                    if (data.lastUpdated && isSubscribed) {
+                        setLastUpdated(`Cloud: ${data.lastUpdated}`);
+                    }
+                    
+                    setIsCloudAvailable(true);
+                } else {
+                    console.log("⚠️ Connected to Firebase, but document is empty.");
+                    // Use local data if document exists but is empty
+                    fallbackToLocal();
+                }
+            }, error => {
+                console.error("Firebase sync error:", error);
+                if (isSubscribed) {
+                    fallbackToLocal();
+                }
+            });
+            
+        } catch (error) {
+            console.error("Error initializing Firebase sync:", error);
+            if (isSubscribed) {
+                fallbackToLocal();
+            }
+        }
+    };
+    
+    // Check if Firebase is ready
+    if (window.firebase?.firestore) {
+        initializeFirebaseSync();
+    } else {
+        // Wait for Firebase to be ready
+        const handleFirebaseReady = () => {
+            if (isSubscribed) {
+                initializeFirebaseSync();
+            }
+        };
+        
+        window.addEventListener('firebase-ready', handleFirebaseReady);
+        
+        // Also set a timeout to fallback to local storage if Firebase takes too long
+        const fallbackTimeout = setTimeout(() => {
+            if (isSubscribed && !window.firebase?.firestore) {
+                console.warn("Firebase initialization timeout, falling back to local storage");
+                fallbackToLocal();
+            }
+        }, 5000); // 5 second timeout
+        
         return () => {
-            window.removeEventListener('firebase-ready', startSync);
+            isSubscribed = false;
+            window.removeEventListener('firebase-ready', handleFirebaseReady);
+            clearTimeout(fallbackTimeout);
             unsubscribe();
         };
-    }, []);
+    }
+    
+    return () => {
+        isSubscribed = false;
+        unsubscribe();
+    };
+}, []);
 	
             // Excel file upload handler
             const handleFileUpload = (e) => {
