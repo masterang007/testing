@@ -669,43 +669,7 @@ useEffect(() => {
 
 
                 
-                // Check if Firebase is ready
-                if (window.isFirebaseAvailable?.()) {
-                    initializeFirebaseSync();
-                } else {
-                    // Wait for Firebase to be ready
-                    const handleFirebaseReady = () => {
-                        if (isSubscribed) {
-                            initializeFirebaseSync();
-                        }
-                    };
-                    
-                    window.addEventListener('firebase-ready', handleFirebaseReady);
-                    
-                    // Also set a timeout to fallback to local storage if Firebase takes too long
-                    const fallbackTimeout = setTimeout(() => {
-                        if (isSubscribed && !window.isFirebaseAvailable?.()) {
-                            console.warn("Firebase initialization timeout, falling back to local storage");
-                            fallbackToLocal();
-                        }
-                    }, 5000); // 5 second timeout
-                    
-                    loadDefaultData();
-                    
-                    return () => {
-                        isSubscribed = false;
-                        window.removeEventListener('firebase-ready', handleFirebaseReady);
-                        clearTimeout(fallbackTimeout);
-                        unsubscribe();
-                    };
-                }
-                
-                return () => {
-                    isSubscribed = false;
-                    unsubscribe();
-                };
-            }, []);
-            
+               
                         // Fallback to local storage when cloud is unavailable
             const fallbackToLocal = () => {
                 setIsCloudAvailable(false);
