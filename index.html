@@ -178,16 +178,14 @@
                     console.warn("Firebase SDK not loaded");
                     window.isFirebaseAvailable = () => false;
                 } else {
-                    // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
-                    // Go to https://console.firebase.google.com/ to create a project and get these values
+                    // Firebase config provided by user
                     const firebaseConfig = {
-					  apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
-					  authDomain: "dashboard-fced7.firebaseapp.com",
-					  projectId: "dashboard-fced7",
-					  storageBucket: "dashboard-fced7.firebasestorage.app",
-					  messagingSenderId: "893864259222",
-					  appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
-
+                        apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
+                        authDomain: "dashboard-fced7.firebaseapp.com",
+                        projectId: "dashboard-fced7",
+                        storageBucket: "dashboard-fced7.firebasestorage.app",
+                        messagingSenderId: "893864259222",
+                        appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
                     };
 
                     // Initialize Firebase
@@ -1489,4 +1487,3 @@
     </script>
 </body>
 </html>
-
