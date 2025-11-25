@@ -267,7 +267,7 @@
                         <div>
                             <h2 className="text-2xl font-bold mb-2">System Error</h2>
                             <p className="text-gray-400 mb-4">The application encountered a critical error.</p>
-                            <button onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }} className="bg-gray-800 px-4 py-2 rounded border border-gray-700 hover:bg-gray-700 text-white">Reset & Reload</button>
+                            <button onClick={() => { try { localStorage.clear(); sessionStorage.clear(); } catch(e){} window.location.reload(); }} className="bg-gray-800 px-4 py-2 rounded border border-gray-700 hover:bg-gray-700 text-white">Reset & Reload</button>
                         </div>
                     </div>
                 );
@@ -758,7 +758,8 @@
                         if (Date.now() - timestamp < 2592000000) return true;
                     }
                     return !!sessionStorage.getItem('rpcm_authenticated');
-                } catch {
+                } catch (e) {
+                    console.warn("Auth storage unavailable", e);
                     return false;
                 }
             });
@@ -855,17 +856,21 @@
             }, [user, firebaseReady]);
             
             const handleLogout = () => {
-                localStorage.removeItem('rpcm_auth_data');
-                sessionStorage.removeItem('rpcm_authenticated');
+                try {
+                    localStorage.removeItem('rpcm_auth_data');
+                    sessionStorage.removeItem('rpcm_authenticated');
+                } catch (e) { console.warn("Storage clear error", e); }
                 setAuthenticated(false);
             };
             
             const handleLogin = (remember) => {
-                if (remember) {
-                    localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
-                } else {
-                    sessionStorage.setItem('rpcm_authenticated', 'true');
-                }
+                try {
+                    if (remember) {
+                        localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
+                    } else {
+                        sessionStorage.setItem('rpcm_authenticated', 'true');
+                    }
+                } catch (e) { console.warn("Storage write error", e); }
                 setAuthenticated(true);
             }
 
