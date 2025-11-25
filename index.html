@@ -256,7 +256,123 @@
             </svg>
         );
         
-        // Gauge Component
+        // Gauge Compo        // --- PASSWORD GATE ---
+        const PasswordGate = ({ onLogin }) => {
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [rememberDevice, setRememberDevice] = useState(false);
+            
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setIsLoading(true);
+                
+                // Simulate slight delay for better UX
+                setTimeout(() => {
+                    if (password === 'rpcm') {
+                        sessionStorage.setItem('rpcm_authenticated', 'true');
+                        
+                        // Handle "Remember me" functionality
+                        if (rememberDevice) {
+                            const authData = {
+                                token: btoa('rpcm' + new Date().toISOString()),
+                                deviceHash: btoa(navigator.userAgent + window.screen.width + window.screen.height),
+                                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+                            };
+                            localStorage.setItem('rpcm_device_auth', JSON.stringify(authData));
+                        }
+                        
+                        onLogin();
+                    } else {
+                        setError('Incorrect password. Please try "rpcm".');
+                        setPassword('');
+                        setIsLoading(false);
+                    }
+                }, 500);
+            };
+            
+            return (
+                <div className="fixed inset-0 bg-gradient-to-br from-gray-900 to-plant-dark flex items-center justify-center p-4 z-50">
+                    <div className="bg-gray-900/90 backdrop-blur-sm border border-plant-green/30 rounded-2xl p-8 w-full max-w-md shadow-2xl animate-fade-in">
+                        <div className="text-center mb-8">
+                            <RpcmLogo className="w-24 h-24 text-plant-green mx-auto" />
+                            <h2 className="text-3xl font-bold text-white mt-2">Operations Monitor</h2>
+                            <p className="text-gray-400 mt-1">PCC Dashboard</p>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Icons.Lock className="h-5 w-5 text-gray-500" />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        setError('');
+                                    }}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-4 pl-10 text-white focus:outline-none focus:ring-2 focus:ring-plant-green focus:border-transparent placeholder:text-gray-500"
+                                    placeholder="Enter access password"
+                                    autoFocus
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="remember-device"
+                                    checked={rememberDevice}
+                                    onChange={(e) => setRememberDevice(e.target.checked)}
+                                    className="rounded border-gray-600 text-plant-green focus:ring-plant-green"
+                                />
+                                <label htmlFor="remember-device" className="ml-2 text-sm text-gray-300">
+                                    Remember me on this device (30 days)
+                                </label>
+                            </div>
+                            
+                            {error && (
+                                <div className="bg-red-900/40 border border-red-900 text-red-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                                    <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{error}</span>
+                                </div>
+                            )}
+                            
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={`w-full bg-gradient-to-r from-plant-green to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-gray-900 font-bold py-3 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-green-900/30 ${
+                                    isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-xl'
+                                }`}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Authenticating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icons.Key className="w-5 h-5" /> 
+                                        <span>Access Dashboard</span>
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                        
+                        <div className="mt-8 pt-6 border-t border-gray-800 text-center text-sm text-gray-500">
+                            <p>Plant Operations Control System • Emerson DeltaV Integration</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        nent
         const Gauge = ({ value, max, title, unit, color, icon: Icon }) => {
             const normalizedValue = Math.min(Math.max(value || 0, 0), max);
             const percentage = normalizedValue / max;
