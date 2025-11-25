@@ -637,25 +637,25 @@
             
             // Fallback to local storage when cloud is unavailable
             const fallbackToLocal = () => {
-                setIsCloudAvailable(false);
-                setLastUpdated("Local Mode (Offline) - " + new Date().toLocaleTimeString());
-                const stored = localStorage.getItem('rpcm_dashboard_data_v17');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        setDashboardData(parsed.dashboardData);
-                        if (parsed.lastUploaded) {
-                            setLastUploaded(parsed.lastUploaded);
-                        }
-                    } catch (e) {
-                        console.error("Error loading from local storage:", e);
-                        // Set default demo data
-                        setDefaultDemoData();
-                    }
-                } else {
-                    setDefaultDemoData();
-                }
-            };
+    setIsCloudAvailable(false);
+    setLastUpdated("Local Mode (Offline) - " + new Date().toLocaleTimeString());
+    const stored = localStorage.getItem('rpcm_dashboard_data_v17');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            // FIX: Access dashboardData property from parsed object
+            setDashboardData(parsed.dashboardData || parsed);
+            if (parsed.lastUploaded) {
+                setLastUploaded(parsed.lastUploaded);
+            }
+        } catch (e) {
+            console.error("Error loading from local storage:", e);
+            setDefaultDemoData(); // Add this fallback
+        }
+    } else {
+        setDefaultDemoData();
+    }
+};
             
             const setDefaultDemoData = () => {
                 setDashboardData({
@@ -1161,19 +1161,18 @@
                                             <h3 className="font-bold text-white">Oxidation Efficiency</h3>
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        {dashboardData.oxidation.efficiency.map((item, idx) => (
-                                            <KpiRow 
-                                                key={idx}
-                                                label={item.title}
-                                                value={item.value}
-                                                target={item.target}
-                                                unit={item.unit}
-                                                inverse={item.inverse}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
+<div className="space-y-4">
+    {dashboardData.oxidation?.efficiency?.map((item, idx) => (
+        <KpiRow 
+            key={idx}
+            label={item.title}
+            value={item.value}
+            target={item.target}
+            unit={item.unit}
+            inverse={item.inverse}
+        />
+    ))}
+</div>
                                 {/* Reaction Parameters */}
                                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
                                     <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-800">
@@ -1331,3 +1330,4 @@
     </script>
 </body>
 </html>
+
