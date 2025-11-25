@@ -374,18 +374,52 @@
                     const text = await selectedFile.text();
                     const lines = text.split('\n').filter(l => l.trim().length > 0);
                     
-                    // Auto-detect format based on first column header
+                    // Auto-detect format based on where "Time" appears in the header
                     const headerRow = parseCSVLine(lines[0]);
-                    const isFormatV2 = headerRow[0] && headerRow[0].trim().toLowerCase() === 'time';
+                    let timeColIndex = headerRow.findIndex(h => h && h.trim().toLowerCase() === 'time');
+                    
+                    // Fallback if logic fails, though header search is robust
+                    if (timeColIndex === -1) timeColIndex = 5; 
 
                     let lastLogObj = null;
 
                     for (let i = 1; i < lines.length; i++) {
                         const row = parseCSVLine(lines[i]);
                         
-                        if (isFormatV2) {
-                            // --- NEW FORMAT (Daily_Report-v1.csv) ---
-                            const timeVal = row[0]?.trim();
+                        // --- 1. Left Side: Daily Summary (Cols 0-3) ---
+                        // Only parse summary if Time is at index > 3 (meaning there's space on the left)
+                        if (timeColIndex > 3 && row.length >= 4) {
+                            const paramName = row[0]?.trim();
+                            const unit = row[1]?.trim();
+                            // Remove quotes and commas for numeric value parsing
+                            const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
+                            const rawTarget = row[3]?.trim().replace(/"/g, '').replace(/,/g, '');
+
+                            const mapping = PARAM_MAPPING_V1[paramName];
+                            
+                            if (mapping && rawActual) {
+                                const val = parseFloat(rawActual);
+                                let status = 'ok';
+                                if (isNaN(val)) status = 'neutral';
+                                
+                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', mapping.id);
+                                batch.set(docRef, {
+                                    id: mapping.id,
+                                    category: mapping.cat,
+                                    name: paramName,
+                                    value: rawActual, // Keep original string formatting for display (e.g. "1,800")
+                                    unit: unit,
+                                    target: rawTarget,
+                                    status: status
+                                });
+                                updatesCount++;
+                            }
+                        }
+
+                        // --- 2. Right Side: Hourly Logs (Cols TimeIndex+) ---
+                        if (row.length > timeColIndex) {
+                            const timeVal = row[timeColIndex]?.trim();
+                            // Validate it looks like time (e.g. 07:00:00 or 7:00)
                             if (timeVal && timeVal.includes(':')) {
                                 // Normalize 1:00:00 -> 01:00
                                 let [h, m] = timeVal.split(':');
@@ -393,23 +427,26 @@
                                 const cleanTime = `${h}:${m}`;
                                 const docId = `log_${h}${m}`;
 
-                                const pFloat = (idx) => {
+                                const pFloat = (offset) => {
+                                    const idx = timeColIndex + offset;
+                                    if (idx >= row.length) return 0;
                                     const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
                                     return val ? parseFloat(val) : 0;
                                 };
 
                                 const logObj = {
                                     time: cleanTime,
-                                    power: pFloat(1),
-                                    gen: pFloat(2),
-                                    steam: pFloat(3),
-                                    px: pFloat(4),
-                                    bc101a: pFloat(5),
-                                    bc101b: pFloat(6),
-                                    steam_dht: pFloat(7),
-                                    header_44: pFloat(8),
-                                    adm2_flow: pFloat(10),
-                                    adm1_flow: pFloat(11)
+                                    power: pFloat(1),      // Time + 1
+                                    gen: pFloat(2),        // Time + 2
+                                    steam: pFloat(3),      // Time + 3
+                                    px: pFloat(4),         // Time + 4
+                                    bc101a: pFloat(5),     // Time + 5
+                                    bc101b: pFloat(6),     // Time + 6
+                                    steam_dht: pFloat(7),  // Time + 7
+                                    header_44: pFloat(8),  // Time + 8
+                                    // skip Time + 9 (Live Header)
+                                    adm2_flow: pFloat(10), // Time + 10
+                                    adm1_flow: pFloat(11)  // Time + 11
                                 };
                                 
                                 const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
@@ -417,53 +454,13 @@
                                 lastLogObj = logObj; // Keep track of latest for summary update
                                 updatesCount++;
                             }
-                        } else {
-                            // --- OLD FORMAT (Side-by-side) ---
-                            // 1. Summary
-                            if (row.length >= 4) {
-                                const paramName = row[0]?.trim();
-                                const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
-                                const mapping = PARAM_MAPPING_V1[paramName];
-                                if (mapping && rawActual) {
-                                    const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', mapping.id);
-                                    batch.set(docRef, {
-                                        id: mapping.id,
-                                        category: mapping.cat,
-                                        name: paramName,
-                                        value: rawActual,
-                                        unit: row[1]?.trim(),
-                                        target: row[3]?.trim().replace(/"/g, '').replace(/,/g, ''),
-                                        status: 'neutral' 
-                                    });
-                                    updatesCount++;
-                                }
-                            }
-                            // 2. Logs (Col 5+)
-                            if (row.length > 5) {
-                                const timeVal = row[5]?.trim();
-                                if (timeVal && timeVal.includes(':')) {
-                                    const cleanTime = timeVal.substring(0, 5);
-                                    const docId = `log_${cleanTime.replace(':', '')}`;
-                                    const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
-                                    const pFloat = (idx) => {
-                                        const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
-                                        return val ? parseFloat(val) : 0;
-                                    };
-                                    batch.set(docRef, {
-                                        time: cleanTime,
-                                        power: pFloat(6),
-                                        gen: pFloat(7),
-                                        steam: pFloat(8),
-                                        px: pFloat(9)
-                                    });
-                                    updatesCount++;
-                                }
-                            }
                         }
                     }
 
-                    // If V2, update Daily Summary values from the *latest* log entry
-                    if (isFormatV2 && lastLogObj) {
+                    // If we parsed logs (specifically format V2 style where we rely on logs for some values),
+                    // we can update the summary with the latest log values to keep them in sync.
+                    // This ensures that "Plant Power" on the card matches the last point on the chart.
+                    if (lastLogObj) {
                         const summaryUpdates = [
                             { id: 'plant_power', val: lastLogObj.power },
                             { id: 'power_gen', val: lastLogObj.gen },
