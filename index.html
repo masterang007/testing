@@ -116,347 +116,6 @@
         };
 
         const initialHourlyData = [
-            { time: '07:00', power: 21.55, px: 20.11, steam: 1.02 },
-            { time: '08:00', power: 21.53, px: 23.42, steam: 1.02 },
-            { time: '09:00', power: 21.68, px: 24.22, steam: 3.02 },
-            // ... filler for visual before data load
-        ];
-
-        // --- Parameter Mapping ---
-        const PARAM_MAPPING = {
-            'CTA Production': { cat: 'production', id: 'cta_prod' },
-            'PTA Production': { cat: 'production', id: 'pta_prod' },
-            'Plant Availability': { cat: 'efficiency', id: 'plant_avail' },
-            'Plant Utilization Rate': { cat: 'efficiency', id: 'plant_util' },
-            'Total Conversion Cost': { cat: 'efficiency', id: 'conv_cost' },
-            'Plant Power': { cat: 'power', id: 'plant_power' },
-            'Power Gen': { cat: 'power', id: 'power_gen' },
-            'BC101A': { cat: 'power', id: 'bc101a' },
-            'BC101B': { cat: 'power', id: 'bc101b' },
-            'Steam FLEXSYS': { cat: 'steam', id: 'steam_flex' },
-            'Steam to DHT': { cat: 'steam', id: 'steam_dht' },
-            '4.4 Steam Header': { cat: 'steam', id: 'header_44' },
-            'PX Rate': { cat: 'process', id: 'px_rate' },
-            'ADM1 Flow': { cat: 'process', id: 'adm1_flow' },
-            'ADM2 Flow': { cat: 'process', id: 'adm2_flow' },
-            'Total Power': { cat: 'utility', id: 'total_power_cons' },
-            'HAC Cons.': { cat: 'utility', id: 'hac_cons' },
-            'Excess PX': { cat: 'utility', id: 'excess_px' },
-            'CMB Catalyst': { cat: 'utility', id: 'cmb_catalyst' },
-            'Rx A Temp': { cat: 'reactor', id: 'rx_a_temp' },
-            'Rx B Temp': { cat: 'reactor', id: 'rx_b_temp' },
-            'Rx A VO2': { cat: 'reactor', id: 'rx_a_vo2' }, 
-            'Rx A VO₂': { cat: 'reactor', id: 'rx_a_vo2' },
-            'Rx B VO2': { cat: 'reactor', id: 'rx_b_vo2' },
-            'Rx B VO₂': { cat: 'reactor', id: 'rx_b_vo2' }
-        };
-
-        // --- Icons ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const icons = {
-                Activity: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
-                Zap: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>,
-                Factory: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>,
-                Droplets: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>,
-                BarChart3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>,
-                AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-                TrendingUp: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
-                Thermometer: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>,
-                Settings: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                UploadCloud: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>,
-                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            };
-            return icons[name] || icons.Activity;
-        };
-
-        // --- Components ---
-
-        const Card = ({ title, children, className = "" }) => (
-            <div className={`glass-panel rounded-xl p-5 ${className}`}>
-                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-4">{title}</h3>
-                {children}
-            </div>
-        );
-
-        const MetricRow = ({ label, value, unit, target, status }) => {
-            const getStatusColor = (s) => {
-                if (s === 'ok') return 'text-status-ok';
-                if (s === 'warn') return 'text-status-warn';
-                if (s === 'crit') return 'text-status-crit';
-                return 'text-gray-300';
-            };
-
-            return (
-                <div className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
-                    <span className="text-sm text-gray-400">{label}</span>
-                    <div className="text-right">
-                        <div className={`text-lg font-bold font-mono ${getStatusColor(status)}`}>
-                            {value} <span className="text-xs text-gray-500 font-normal">{unit}</span>
-                        </div>
-                        {target !== null && target !== undefined && target !== '' && (
-                            <div className="text-xs text-gray-600">
-                                Target: {target}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        const PasswordGate = ({ onLogin }) => {
-            const [password, setPassword] = useState('');
-            const [remember, setRemember] = useState(false);
-            const [error, setError] = useState(false);
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (password === 'rpcm') { 
-                    onLogin(remember);
-                } else {
-                    setError(true);
-                }
-            };
-
-            return (
-                <div className="min-h-screen flex items-center justify-center bg-plant-dark p-4">
-                    <div className="glass-panel p-8 rounded-2xl w-full max-w-md">
-                        <div className="flex justify-center mb-6">
-                            <div className="w-16 h-16 bg-plant-green/20 rounded-full flex items-center justify-center text-plant-green">
-                                <Icon name="Factory" size={32} />
-                            </div>
-                        </div>
-                        <h1 className="text-2xl font-bold text-center mb-2">RPCM Monitor</h1>
-                        <p className="text-gray-400 text-center mb-8">Enter access code to view daily report</p>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Access Code"
-                                    className="w-full bg-plant-dark border border-plant-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-plant-green transition-colors"
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="flex items-center">
-                                <input 
-                                    id="remember-me" 
-                                    type="checkbox" 
-                                    checked={remember}
-                                    onChange={(e) => setRemember(e.target.checked)}
-                                    className="w-4 h-4 text-plant-green bg-gray-700 border-gray-600 rounded focus:ring-plant-green focus:ring-2 custom-checkbox cursor-pointer" 
-                                />
-                                <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-300 cursor-pointer">Remember me for 30 days</label>
-                            </div>
-                            {error && <p className="text-status-crit text-sm text-center">Invalid access code</p>}
-                            <button type="submit" className="w-full bg-plant-green hover:bg-opacity-90 text-plant-dark font-bold py-3 rounded-lg transition-all">
-                                Access Dashboard
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        const ErrorBoundary = class extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false };
-            }
-            static getDerivedStateFromError(error) { return { hasError: true }; }
-            render() {
-                if (this.state.hasError) return <div className="p-8 text-center text-status-crit">System Malfunction. Refresh Required.</div>;
-                return this.props.children;
-            }
-        };
-
-        const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
-            const items = [
-                { id: 'dashboard', icon: 'BarChart3', label: 'Dashboard' },
-                { id: 'logs', icon: 'Activity', label: 'Hourly Logs' },
-                { id: 'settings', icon: 'Settings', label: 'Settings' },
-            ];
-
-            return (
-                <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
-                    <div className="p-6 flex items-center gap-3 border-b border-plant-border">
-                        <div className="w-8 h-8 bg-plant-green rounded flex items-center justify-center text-plant-dark font-bold">R</div>
-                        <span className="font-bold text-xl tracking-tight">RPCM</span>
-                    </div>
-                    <nav className="flex-1 p-4 space-y-2">
-                        {items.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => onTabChange(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                                    activeTab === item.id 
-                                    ? 'bg-plant-green text-plant-dark font-medium shadow-lg shadow-plant-green/20' 
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                }`}
-                            >
-                                <Icon name={item.icon} size={20} />
-                                <span>{item.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                    <div className="p-4 border-t border-plant-border">
-                        <button 
-                            onClick={onLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
-                        >
-                            <Icon name="LogOut" size={20} />
-                            <span>Logout</span>
-                        </button>
-                        <div className="flex items-center gap-3 px-4 py-2 mt-2">
-                            <div className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></div>
-                            <span className="text-xs text-gray-500">System Online</span>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const BottomNav = ({ activeTab, onTabChange }) => {
-            const items = [
-                { id: 'dashboard', icon: 'BarChart3', label: 'Dash' },
-                { id: 'logs', icon: 'Activity', label: 'Logs' },
-                { id: 'settings', icon: 'Settings', label: 'Setup' },
-            ];
-
-            return (
-                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb">
-                    {items.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
-                                activeTab === item.id 
-                                ? 'text-plant-green' 
-                                : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                            <Icon name={item.icon} size={20} />
-                            <span className="text-xs mt-1">{item.label}</span>
-                        </button>
-                    ))}
-                </div><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RPCM Operations Monitor</title>
-    <!-- iOS SETTINGS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RPCM Monitor">
-    <!-- ANDROID SETTINGS -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0f172a">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'plant-green': '#8cc63f',
-                        'plant-dark': '#0d1117',
-                        'plant-card': '#161b22',
-                        'plant-border': '#30363d',
-                        'status-ok': '#238636',
-                        'status-warn': '#d29922',
-                        'status-crit': '#da3633',
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Prop Types (Required for Recharts UMD) -->
-    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    
-    <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Recharts -->
-    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
-
-    <!-- Firebase SDKs (Modular) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Expose Firebase globals for the React app
-        window.firebaseModules = { 
-            initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-            getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch
-        };
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
-
-    <style>
-        body { background-color: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .glass-panel { background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; }
-        .stat-card { transition: all 0.2s ease; }
-        .stat-card:hover { transform: translateY(-2px); border-color: #8cc63f; }
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0d1117; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #8cc63f; }
-        input[type="file"]::file-selector-button {
-            background-color: #1f2937;
-            color: #9ca3af;
-            border: 1px solid #374151;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.375rem;
-            margin-right: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        input[type="file"]::file-selector-button:hover {
-            background-color: #374151;
-            color: #e5e7eb;
-        }
-        .custom-checkbox {
-            accent-color: #8cc63f;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback, useRef } = React;
-        const { 
-            LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-            Tooltip, ResponsiveContainer, ReferenceLine, Legend 
-        } = Recharts;
-
-        // --- Firebase Config & Initialization ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
-            authDomain: "dashboard-fced7.firebaseapp.com",
-            projectId: "dashboard-fced7",
-            storageBucket: "dashboard-fced7.firebasestorage.app",
-            messagingSenderId: "893864259222",
-            appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
-        };
-
-        const getAppId = () => typeof __app_id !== 'undefined' ? __app_id : 'dashboard-fced7';
-
-        // --- Data Defaults ---
-        const initialDailySummary = {
-            production: [], efficiency: [], power: [], steam: [], process: [], utility: [], reactor: []
-        };
-
-        const initialHourlyData = [
             { time: '07:00', power: 0, px: 0, steam: 0 }
         ];
 
@@ -686,36 +345,23 @@
             const [status, setStatus] = useState('');
             const [selectedFile, setSelectedFile] = useState(null);
 
-            // Robust CSV Parser that handles commas within quotes (e.g. "1,800")
             const parseCSVLine = (text) => {
                 const results = [];
                 let entry = [];
                 let inQuote = false;
-                
                 for (let i = 0; i < text.length; i++) {
                     const char = text[i];
-                    if (char === '"') {
-                        inQuote = !inQuote;
-                    } else if (char === ',' && !inQuote) {
-                        results.push(entry.join(''));
-                        entry = [];
-                    } else {
-                        entry.push(char);
-                    }
+                    if (char === '"') { inQuote = !inQuote; } 
+                    else if (char === ',' && !inQuote) { results.push(entry.join('')); entry = []; } 
+                    else { entry.push(char); }
                 }
                 results.push(entry.join(''));
                 return results;
             };
 
             const handleUpload = async () => {
-                if (!user || !db) {
-                    setStatus("Error: Database not connected.");
-                    return;
-                }
-                if (!selectedFile) {
-                    setStatus("Please select the 'Daily_Report.csv' file.");
-                    return;
-                }
+                if (!user || !db) { setStatus("Error: Database not connected."); return; }
+                if (!selectedFile) { setStatus("Please select a CSV file."); return; }
 
                 setUploading(true);
                 setStatus('Processing file...');
@@ -728,48 +374,24 @@
                     const text = await selectedFile.text();
                     const lines = text.split('\n').filter(l => l.trim().length > 0);
                     
-                    // Skip header (row 0)
+                    // Auto-detect format based on first column header
+                    const headerRow = parseCSVLine(lines[0]);
+                    const isFormatV2 = headerRow[0] && headerRow[0].trim().toLowerCase() === 'time';
+
+                    let lastLogObj = null;
+
                     for (let i = 1; i < lines.length; i++) {
                         const row = parseCSVLine(lines[i]);
                         
-                        // --- 1. Left Side: Daily Summary (Cols 0-3) ---
-                        // [Parameter, Unit, Actual, Target]
-                        if (row.length >= 4) {
-                            const paramName = row[0]?.trim();
-                            const unit = row[1]?.trim();
-                            // Remove quotes and commas for numeric value parsing
-                            const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
-                            const rawTarget = row[3]?.trim().replace(/"/g, '').replace(/,/g, '');
-
-                            const mapping = PARAM_MAPPING[paramName];
-                            
-                            if (mapping && rawActual) {
-                                let status = 'ok';
-                                const val = parseFloat(rawActual);
-                                if (isNaN(val)) status = 'neutral';
-                                
-                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', mapping.id);
-                                batch.set(docRef, {
-                                    id: mapping.id,
-                                    category: mapping.cat,
-                                    name: paramName,
-                                    value: rawActual, // Keep original string formatting for display (e.g. "1,800")
-                                    unit: unit,
-                                    target: rawTarget,
-                                    status: status
-                                });
-                                updatesCount++;
-                            }
-                        }
-
-                        // --- 2. Right Side: Hourly Logs (Cols 5+) ---
-                        if (row.length > 5) {
-                            const timeVal = row[5]?.trim();
-                            // Validate it looks like time (e.g. 07:00:00)
+                        if (isFormatV2) {
+                            // --- NEW FORMAT (Daily_Report-v1.csv) ---
+                            const timeVal = row[0]?.trim();
                             if (timeVal && timeVal.includes(':')) {
-                                const cleanTime = timeVal.substring(0, 5); // HH:MM
-                                const docId = `log_${cleanTime.replace(':', '')}`;
-                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
+                                // Normalize 1:00:00 -> 01:00
+                                let [h, m] = timeVal.split(':');
+                                if (h.length === 1) h = '0' + h;
+                                const cleanTime = `${h}:${m}`;
+                                const docId = `log_${h}${m}`;
 
                                 const pFloat = (idx) => {
                                     const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
@@ -778,15 +400,88 @@
 
                                 const logObj = {
                                     time: cleanTime,
-                                    power: pFloat(6),
-                                    gen: pFloat(7),
-                                    steam: pFloat(8),
-                                    px: pFloat(9),
+                                    power: pFloat(1),
+                                    gen: pFloat(2),
+                                    steam: pFloat(3),
+                                    px: pFloat(4),
+                                    bc101a: pFloat(5),
+                                    bc101b: pFloat(6),
+                                    steam_dht: pFloat(7),
+                                    header_44: pFloat(8),
+                                    adm2_flow: pFloat(10),
+                                    adm1_flow: pFloat(11)
                                 };
+                                
+                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
                                 batch.set(docRef, logObj);
+                                lastLogObj = logObj; // Keep track of latest for summary update
                                 updatesCount++;
                             }
+                        } else {
+                            // --- OLD FORMAT (Side-by-side) ---
+                            // 1. Summary
+                            if (row.length >= 4) {
+                                const paramName = row[0]?.trim();
+                                const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
+                                const mapping = PARAM_MAPPING_V1[paramName];
+                                if (mapping && rawActual) {
+                                    const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', mapping.id);
+                                    batch.set(docRef, {
+                                        id: mapping.id,
+                                        category: mapping.cat,
+                                        name: paramName,
+                                        value: rawActual,
+                                        unit: row[1]?.trim(),
+                                        target: row[3]?.trim().replace(/"/g, '').replace(/,/g, ''),
+                                        status: 'neutral' 
+                                    });
+                                    updatesCount++;
+                                }
+                            }
+                            // 2. Logs (Col 5+)
+                            if (row.length > 5) {
+                                const timeVal = row[5]?.trim();
+                                if (timeVal && timeVal.includes(':')) {
+                                    const cleanTime = timeVal.substring(0, 5);
+                                    const docId = `log_${cleanTime.replace(':', '')}`;
+                                    const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
+                                    const pFloat = (idx) => {
+                                        const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
+                                        return val ? parseFloat(val) : 0;
+                                    };
+                                    batch.set(docRef, {
+                                        time: cleanTime,
+                                        power: pFloat(6),
+                                        gen: pFloat(7),
+                                        steam: pFloat(8),
+                                        px: pFloat(9)
+                                    });
+                                    updatesCount++;
+                                }
+                            }
                         }
+                    }
+
+                    // If V2, update Daily Summary values from the *latest* log entry
+                    if (isFormatV2 && lastLogObj) {
+                        const summaryUpdates = [
+                            { id: 'plant_power', val: lastLogObj.power },
+                            { id: 'power_gen', val: lastLogObj.gen },
+                            { id: 'steam_flex', val: lastLogObj.steam },
+                            { id: 'px_rate', val: lastLogObj.px },
+                            { id: 'bc101a', val: lastLogObj.bc101a },
+                            { id: 'bc101b', val: lastLogObj.bc101b },
+                            { id: 'steam_dht', val: lastLogObj.steam_dht },
+                            { id: 'header_44', val: lastLogObj.header_44 },
+                            { id: 'adm1_flow', val: lastLogObj.adm1_flow },
+                            { id: 'adm2_flow', val: lastLogObj.adm2_flow },
+                        ];
+                        
+                        summaryUpdates.forEach(upd => {
+                            const ref = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', upd.id);
+                            // Use merge to update value without wiping target/name if they exist
+                            batch.set(ref, { value: upd.val }, { merge: true });
+                        });
                     }
 
                     await batch.commit();
@@ -808,7 +503,7 @@
                     <div className="glass-panel p-6 rounded-xl max-w-2xl">
                         <h2 className="text-lg font-semibold mb-4">Manual Data Upload</h2>
                         <p className="text-gray-400 mb-6 text-sm">
-                            Upload the consolidated <strong>Daily_Report.csv</strong> file (containing both summary and hourly logs).
+                            Upload your daily report CSV here. Supports both side-by-side and log-only formats.
                         </p>
                         
                         <div className="space-y-6">
@@ -858,7 +553,6 @@
         };
 
         const Dashboard = ({ dailyData, hourlyData }) => {
-            // Helper to get a specific metric value safely
             const getVal = (cat, id) => {
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.value : '-';
@@ -868,10 +562,8 @@
                 return item ? item.target : '';
             };
 
-            // Derive latest time from hourly logs
             const latestTime = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return "N/A";
-                // Assuming data is sorted by time, take the last one
                 const lastLog = hourlyData[hourlyData.length - 1];
                 return lastLog.time || "N/A";
             }, [hourlyData]);
@@ -1152,31 +844,44 @@
                 };
             }, [user, firebaseReady]);
 
-            // Session Auth with 30-day persistence
+            // Session Auth Logic with 30-Day Persistence
             useEffect(() => {
+                // Check Local Storage (Long term)
                 const storedAuth = localStorage.getItem('rpcm_auth_data');
                 if (storedAuth) {
                     try {
                         const { timestamp } = JSON.parse(storedAuth);
-                        // 30 days in milliseconds = 30 * 24 * 60 * 60 * 1000 = 2592000000
+                        // 30 days in milliseconds
                         if (Date.now() - timestamp < 2592000000) {
                             setAuthenticated(true);
+                            return;
                         } else {
-                            localStorage.removeItem('rpcm_auth_data');
+                            localStorage.removeItem('rpcm_auth_data'); // Expired
                         }
                     } catch (e) {
                         localStorage.removeItem('rpcm_auth_data');
                     }
                 }
+
+                // Check Session Storage (Short term)
+                const sessionAuth = sessionStorage.getItem('rpcm_authenticated');
+                if (sessionAuth) {
+                    setAuthenticated(true);
+                }
             }, []);
             
             const handleLogout = () => {
                 localStorage.removeItem('rpcm_auth_data');
+                sessionStorage.removeItem('rpcm_authenticated');
                 setAuthenticated(false);
             };
             
-            const handleLogin = () => {
-                localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
+            const handleLogin = (remember) => {
+                if (remember) {
+                    localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
+                } else {
+                    sessionStorage.setItem('rpcm_authenticated', 'true');
+                }
                 setAuthenticated(true);
             }
 
@@ -1232,9 +937,6 @@
                                 appId={getAppId()} 
                             />
                         )}
-                        
-                        {/* Logout button moved to Sidebar/Profile section in full UI, or settings page on mobile */}
-                        {/* We keep a mobile disconnect button in settings or just use the clear auth logic */}
                     </div>
                 </ErrorBoundary>
             );
