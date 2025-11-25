@@ -170,59 +170,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <script type="text/babel">
-        // Firebase initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Check if Firebase is available
-                if (typeof firebase === 'undefined') {
-                    console.warn("Firebase SDK not loaded");
-                    window.isFirebaseAvailable = () => false;
-                } else {
-                    // Firebase config provided by user
-                    const firebaseConfig = {
-                        apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
-                        authDomain: "dashboard-fced7.firebaseapp.com",
-                        projectId: "dashboard-fced7",
-                        storageBucket: "dashboard-fced7.firebasestorage.app",
-                        messagingSenderId: "893864259222",
-                        appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
-                    };
-
-                    // Initialize Firebase
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(firebaseConfig);
-                    }
-                    
-                    // Initialize Firestore
-                    const db = firebase.firestore();
-                    
-                    // Set up Firebase modules on window
-                    window.firebaseModules = {
-                        db,
-                        doc: firebase.firestore.doc,
-                        onSnapshot: firebase.firestore.onSnapshot,
-                        setDoc: firebase.firestore.setDoc
-                    };
-                    
-                    window.isFirebaseAvailable = () => true;
-                    console.log("Firebase initialized successfully");
-                    
-                    // Dispatch event to signal Firebase is ready
-                    const event = new Event('firebase-ready');
-                    window.dispatchEvent(event);
-                }
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                window.isFirebaseAvailable = () => false;
-            }
-        });
-
-        // Fallback function if Firebase is not set up
-        if (!window.isFirebaseAvailable) {
-            window.isFirebaseAvailable = () => false;
-        }
         
-        // Main Dashboard Code
+        const { useState, useEffect, useMemo, useRef } = React;
         const { useState, useEffect, useRef } = React;
         const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
         
