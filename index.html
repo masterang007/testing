@@ -609,68 +609,65 @@ useEffect(() => {
             };
             
             useEffect(() => {
-                let unsubscribe = () => {}; // Cleanup function placeholder
-                let isSubscribed = true; // To prevent state updates after unmount
-                setSyncError(null);
+                                const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
+                let unsubscribe = null;
                 
-                const initializeFirebaseSync = () => {
-                    // Check if Firebase is available
-                    if (!window.isFirebaseAvailable?.()) {
-                        console.warn("Firebase not available, falling back to local storage");
-                        fallbackToLocal();
-                        return;
-                    }
-                    
-                    console.log("Starting Firebase Sync...");
+                if (activeConfig) {
+                    setIsCloudAvailable(true);
                     try {
-                        const { db, onSnapshot, doc } = window.firebaseModules || {};
-                        if (!db || !onSnapshot || !doc) {
-                            console.warn("Firebase modules not properly initialized");
-                            fallbackToLocal();
-                            return;
+                        const app = initializeApp(activeConfig);
+                        const auth = getAuth(app);
+                        const db = getFirestore(app);
+                        
+                        const path = configSource === 'user' 
+                            ? doc(db, 'dashboard_data', 'live_status') 
+                            : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
+                        
+                        if (configSource === 'canvas' && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            signInWithCustomToken(auth, __initial_auth_token).catch(() => fallbackToLocal());
+                        } else {
+                            signInAnonymously(auth).catch(() => fallbackToLocal());
                         }
                         
-                        const docRef = doc(db, 'dashboard_data', 'live_status');
-                        
-                        unsubscribe = onSnapshot(docRef, (snapshot) => {
-                            if (!isSubscribed) return;
-                            
-                            if (snapshot.exists()) {
-                                const data = snapshot.data();
-                                console.log("🔥 Data Received from Firebase:", data);
+                        onAuthStateChanged(auth, (u) => {
+                            if (u) {
+                                setUser(u);
                                 
-                                // Update state with received data
-                                if (data.dashboardData && isSubscribed) {
-                                    setDashboardData(prevData => ({
-                                        ...prevData,
-                                        ...data.dashboardData
-                                    }));
-                                }
-                                
-                                if (data.lastUpdated && isSubscribed) {
-                                    setLastUpdated(`Cloud: ${data.lastUpdated}`);
-                                    setIsCloudAvailable(true);
-                                }
-                            } else {
-                                console.log("⚠️ Connected to Firebase, but document is empty.");
-                                // Use local data if document exists but is empty
-                                fallbackToLocal();
-                            }
-                        }, (error) => {
-                            console.error("Firebase sync error:", error);
-                            setSyncError(error.message || "Cloud sync failed");
-                            if (isSubscribed) {
-                                fallbackToLocal();
+                                unsubscribe = onSnapshot(path, (docSnap) => {
+                                    if (docSnap.exists()) {
+                                        const d = docSnap.data();
+                                        if (d.dashboardData) {
+                                            setDashboardData(d.dashboardData);
+                                        }
+                                        if (d.lastUpdated) {
+                                            setLastUpdated(d.lastUpdated);
+                                        }
+                                        if (d.lastUploaded) {
+                                            setLastUploaded(d.lastUploaded);
+                                        }
+                                    } else {
+                                        setLastUpdated("Waiting for cloud data...");
+                                    }
+                                }, (error) => {
+                                    console.error("Cloud sync error:", error);
+                                    fallbackToLocal();
+                                });
                             }
                         });
                     } catch (error) {
-                        console.error("Error initializing Firebase sync:", error);
-                        setSyncError(error.message || "Cloud sync failed");
-                        if (isSubscribed) {
-                            fallbackToLocal();
-                        }
+                        console.error("Firebase initialization error:", error);
+                        fallbackToLocal();
                     }
+                } else {
+                    fallbackToLocal();
+                }
+                
+                return () => {
+                    if (unsubscribe) unsubscribe();
                 };
+            }, []);
+
+
                 
                 // Check if Firebase is ready
                 if (window.isFirebaseAvailable?.()) {
