@@ -1043,12 +1043,15 @@
                                 tgt: parseFloat(row[3]) 
                             } : null;
                         };
-    
-                        // Production metrics
+                        
+                        // Map production values
                         const cta = findValue('CTA Production');
                         if(cta) newData.production[0].actual = cta.val;
+                        
                         const pta = findValue('PTA Production');
                         if(pta) newData.production[1].actual = pta.val;
+                        
+                        // Map availability
                         const avail = findValue('Plant Availability');
                         if(avail) newData.production[2].actual = avail.val;
                         const util = findValue('Plant Utilization Rate');
@@ -1059,22 +1062,25 @@
                         // Utilities - Power
                         const plantP = findValue('Plant Power');
                         if(plantP) newData.metrics.power[0].value = plantP.val;
+                        
                         const pGen = findValue('Power Gen');
                         if(pGen) newData.metrics.power[1].value = pGen.val;
+                        
                         const bc101a = findValue('BC101A');
                         if(bc101a) newData.metrics.power[2].value = bc101a.val;
+                        
                         const bc101b = findValue('BC101B');
                         if(bc101b) newData.metrics.power[3].value = bc101b.val;
-    
-                        // Utilities - Steam
+                        
+                        // Map steam metrics
                         const sFlex = findValue('Steam FLEXSYS');
                         if(sFlex) newData.metrics.steam[0].value = sFlex.val;
                         const sDht = findValue('Steam to DHT', ['Steam DHT']);
                         if(sDht) newData.metrics.steam[1].value = sDht.val;
                         const sHead = findValue('4.4 Steam Header', ['4.4 Header']);
                         if(sHead) newData.metrics.steam[2].value = sHead.val;
-    
-                        // Utilities - Flow
+                        
+                        // Map flow metrics
                         const px = findValue('PX Rate');
                         if(px) newData.metrics.flow[0].value = px.val;
                         const adm1 = findValue('ADM 1 Flow', ['ADM1 Flow']);
@@ -1151,10 +1157,10 @@
                                 plantPower: getVal('Plant Power'),
                                 powerGen: getVal('Power Gen'),
                                 steamFlex: getVal('Steam FLEXSYS'),
-                                pxRate: getVal('PX Rate'),
+                                pxRate: getVal('PX rate'),
                                 bc101a: getVal('BC101A'),
                                 bc101b: getVal('BC101B'),
-                                steamDht: getVal('Steam to DHT'),
+                                steamDht: getVal('Steam DHT'),
                                 header44: getVal('4.4 Header'),
                                 liveHeader: getVal('Live Header'),
                                 adm2: getVal('ADM2 Flow'),
@@ -1266,13 +1272,14 @@
                         </header>
                         
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                            {/* Production Metrics - Expanded with new parameters */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                            {/* Production Metrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {dashboardData.production.map(p => (
                                     <ProductionCard key={p.id} {...p} />
                                 ))}
                             </div>
-                            {/* Utilities Section - Grouped by type */}
+                            
+                            {/* Gauges Section */}
                             <div>
                                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <Icons.Zap className="text-plant-orange w-5 h-5" /> 
@@ -1332,7 +1339,8 @@
                                     </div>
                                 </div>
                             </div>
-                            {/* Hourly Trends Chart */}
+                            
+                            {/* Hourly Trends Chart - FIXED FOR MOBILE & DESKTOP */}
                             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 flex flex-col">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
                                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
