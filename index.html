@@ -1310,12 +1310,64 @@
             );
         };
         
-        // Initialize the app with error boundary
+        const App = () => {
+            const [authenticated, setAuthenticated] = useState(false);
+            
+            useEffect(() => {
+                // Check authentication on mount
+                if (sessionStorage.getItem('rpcm_authenticated') === 'true') {
+                    setAuthenticated(true);
+                    return;
+                }
+                
+                // Check for device authentication
+                const deviceAuth = localStorage.getItem('rpcm_device_auth');
+                if (deviceAuth) {
+                    try {
+                        const authData = JSON.parse(deviceAuth);
+                        // Check if not expired
+                        if (new Date(authData.expires) > new Date()) {
+                            // Basic device matching (user agent + screen dimensions)
+                            const currentDeviceHash = btoa(navigator.userAgent + window.screen.width + window.screen.height);
+                            if (authData.deviceHash === currentDeviceHash) {
+                                sessionStorage.setItem('rpcm_authenticated', 'true');
+                                setAuthenticated(true);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Device auth error:", e);
+                    }
+                }
+            }, []);
+            
+            const handleLogout = () => {
+                sessionStorage.removeItem('rpcm_authenticated');
+                setAuthenticated(false);
+            };
+            
+            if (!authenticated) {
+                return <PasswordGate onLogin={() => setAuthenticated(true)} />;
+            }
+            
+            return (
+                <div className="relative">
+                    <Dashboard />
+                    <button 
+                        onClick={handleLogout}
+                        className="fixed bottom-4 right-4 bg-gray-800/90 hover:bg-gray-700 text-gray-300 p-2 rounded-full shadow-lg z-50 transition-colors"
+                        title="Logout"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                </div>
+            );
+        };
+        
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
+        	root.render(<App />);
         );
     </script>
 </body>
