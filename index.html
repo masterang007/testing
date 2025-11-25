@@ -686,13 +686,7 @@ useEffect(() => {
                         console.error("Error loading from local storage:", e);
                     }
                 } else {
-                    loadDefaultData();
-                }
-            };
-            
-            // Load default demo data
-            const loadDefaultData = () => {
-                setDashboardData({
+                    setDashboardData({
                     production: [
                         { id: 'cta', title: 'CTA Production', actual: 1473, target: 1808, unit: 'tonnes' },
                         { id: 'pta', title: 'PTA Production', actual: 1733, target: 1857, unit: 'tonnes' },
