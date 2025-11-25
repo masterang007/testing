@@ -1075,15 +1075,6 @@
                     setDashboardData(newData);
                     setLastUpdated(`Data updated: ${uploadTime}`);
                     
-                    // Save to local storage (always save locally)
-                    localStorage.setItem('rpcm_dashboard_data_v2', JSON.stringify({
-                        ...newData,
-                        lastUpdated: uploadTime
-                    }));
-    
-                    // Try to upload to Firebase
-                    const cloudSuccess = await uploadDataToFirebase(newData, uploadTime);
-                    
                     // Show appropriate message
                     if (cloudSuccess) {
                         setIsCloudAvailable(true);
