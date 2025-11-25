@@ -160,7 +160,8 @@
                 TrendingUp: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
                 Thermometer: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>,
                 Settings: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                UploadCloud: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+                UploadCloud: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>,
+                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             };
             return icons[name] || icons.Activity;
         };
@@ -255,7 +256,7 @@
             }
         };
 
-        const Sidebar = ({ activeTab, onTabChange }) => {
+        const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
             const items = [
                 { id: 'dashboard', icon: 'BarChart3', label: 'Dashboard' },
                 { id: 'logs', icon: 'Activity', label: 'Hourly Logs' },
@@ -263,10 +264,10 @@
             ];
 
             return (
-                <div className="w-20 lg:w-64 border-r border-plant-border flex flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
+                <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
                     <div className="p-6 flex items-center gap-3 border-b border-plant-border">
                         <div className="w-8 h-8 bg-plant-green rounded flex items-center justify-center text-plant-dark font-bold">R</div>
-                        <span className="font-bold text-xl tracking-tight hidden lg:block">RPCM</span>
+                        <span className="font-bold text-xl tracking-tight">RPCM</span>
                     </div>
                     <nav className="flex-1 p-4 space-y-2">
                         {items.map(item => (
@@ -280,16 +281,50 @@
                                 }`}
                             >
                                 <Icon name={item.icon} size={20} />
-                                <span className="hidden lg:block">{item.label}</span>
+                                <span>{item.label}</span>
                             </button>
                         ))}
                     </nav>
                     <div className="p-4 border-t border-plant-border">
-                        <div className="flex items-center gap-3 px-4 py-2">
+                        <button 
+                            onClick={onLogout}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
+                        >
+                            <Icon name="LogOut" size={20} />
+                            <span>Logout</span>
+                        </button>
+                        <div className="flex items-center gap-3 px-4 py-2 mt-2">
                             <div className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></div>
-                            <span className="text-xs text-gray-500 hidden lg:block">System Online</span>
+                            <span className="text-xs text-gray-500">System Online</span>
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        const BottomNav = ({ activeTab, onTabChange }) => {
+            const items = [
+                { id: 'dashboard', icon: 'BarChart3', label: 'Dash' },
+                { id: 'logs', icon: 'Activity', label: 'Logs' },
+                { id: 'settings', icon: 'Settings', label: 'Setup' },
+            ];
+
+            return (
+                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb">
+                    {items.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => onTabChange(item.id)}
+                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
+                                activeTab === item.id 
+                                ? 'text-plant-green' 
+                                : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                        >
+                            <Icon name={item.icon} size={20} />
+                            <span className="text-xs mt-1">{item.label}</span>
+                        </button>
+                    ))}
                 </div>
             );
         };
@@ -376,8 +411,6 @@
                         }
 
                         // --- 2. Right Side: Hourly Logs (Cols 5+) ---
-                        // [..., ..., ..., ..., empty, Time, Plant Power, Power Gen, Steam FLEXSYS, PX rate, ...]
-                        // Index 5 is Time
                         if (row.length > 5) {
                             const timeVal = row[5]?.trim();
                             // Validate it looks like time (e.g. 07:00:00)
@@ -386,21 +419,17 @@
                                 const docId = `log_${cleanTime.replace(':', '')}`;
                                 const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
 
-                                // Helper to safely parse float from potentially empty or quoted strings
                                 const pFloat = (idx) => {
                                     const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
                                     return val ? parseFloat(val) : 0;
                                 };
 
-                                // Mapped based on CSV columns provided in prompt:
-                                // 5:Time, 6:PlantPower, 7:PowerGen, 8:SteamFlex, 9:PXRate, 10:BC101A, 11:BC101B, 12:SteamDHT, 13:4.4Header
                                 const logObj = {
                                     time: cleanTime,
                                     power: pFloat(6),
                                     gen: pFloat(7),
                                     steam: pFloat(8),
                                     px: pFloat(9),
-                                    // Additional fields can be added if we expand chart data
                                 };
                                 batch.set(docRef, logObj);
                                 updatesCount++;
@@ -422,7 +451,7 @@
             };
 
             return (
-                <div className="p-8 md:ml-20 lg:ml-64 text-white">
+                <div className="p-4 md:p-8 md:ml-64 text-white">
                     <h1 className="text-2xl font-bold mb-6">Settings</h1>
                     <div className="glass-panel p-6 rounded-xl max-w-2xl">
                         <h2 className="text-lg font-semibold mb-4">Manual Data Upload</h2>
@@ -487,21 +516,29 @@
                 return item ? item.target : '';
             };
 
+            // Derive latest time from hourly logs
+            const latestTime = useMemo(() => {
+                if (!hourlyData || hourlyData.length === 0) return "N/A";
+                // Assuming data is sorted by time, take the last one
+                const lastLog = hourlyData[hourlyData.length - 1];
+                return lastLog.time || "N/A";
+            }, [hourlyData]);
+
             return (
-                <div className="p-4 md:p-8 space-y-6 pb-20 md:ml-20 lg:ml-64">
+                <div className="p-4 md:p-8 space-y-6 pb-20 md:ml-64">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h1 className="text-2xl font-bold">Daily Report</h1>
-                            <p className="text-gray-400 text-sm">Real-time Data Stream</p>
+                            <p className="text-gray-400 text-sm flex items-center gap-2">
+                                <Icon name="Activity" size={14} className="text-plant-green" />
+                                Data as of: Today, {latestTime}
+                            </p>
                         </div>
                         <div className="flex gap-2">
                              <div className="bg-red-900/30 text-red-400 px-3 py-1 rounded-full text-xs font-medium border border-red-900/50 flex items-center gap-2">
                                 <Icon name="AlertTriangle" size={12} />
                                 Low Steam DHT
-                            </div>
-                            <div className="bg-plant-green/10 text-plant-green px-3 py-1 rounded-full text-xs font-medium border border-plant-green/20">
-                                Operations Active
                             </div>
                         </div>
                     </div>
@@ -763,19 +800,31 @@
                 };
             }, [user, firebaseReady]);
 
-            // Session Auth
+            // Session Auth with 30-day persistence
             useEffect(() => {
-                const isAuth = sessionStorage.getItem('rpcm_authenticated');
-                if (isAuth) setAuthenticated(true);
+                const storedAuth = localStorage.getItem('rpcm_auth_data');
+                if (storedAuth) {
+                    try {
+                        const { timestamp } = JSON.parse(storedAuth);
+                        // 30 days in milliseconds = 30 * 24 * 60 * 60 * 1000 = 2592000000
+                        if (Date.now() - timestamp < 2592000000) {
+                            setAuthenticated(true);
+                        } else {
+                            localStorage.removeItem('rpcm_auth_data');
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('rpcm_auth_data');
+                    }
+                }
             }, []);
             
             const handleLogout = () => {
-                sessionStorage.removeItem('rpcm_authenticated');
+                localStorage.removeItem('rpcm_auth_data');
                 setAuthenticated(false);
             };
             
             const handleLogin = () => {
-                sessionStorage.setItem('rpcm_authenticated', 'true');
+                localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
                 setAuthenticated(true);
             }
 
@@ -788,14 +837,18 @@
             return (
                 <ErrorBoundary>
                     <div className="min-h-screen bg-plant-dark">
-                        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+                        {/* Sidebar for Desktop */}
+                        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+                        
+                        {/* Bottom Nav for Mobile */}
+                        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
                         
                         {activeTab === 'dashboard' && <Dashboard dailyData={dailyData} hourlyData={hourlyData} />}
                         {activeTab === 'logs' && (
-                             <div className="p-8 md:ml-20 lg:ml-64 text-center text-gray-500 mt-20">
+                             <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
                                 <h2 className="text-xl mb-4">Hourly Logs View</h2>
                                 <div className="glass-panel p-4 rounded-xl overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
+                                    <table className="w-full text-sm text-left whitespace-nowrap">
                                         <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
                                             <tr>
                                                 <th className="px-6 py-3">Time</th>
@@ -828,13 +881,8 @@
                             />
                         )}
                         
-                        <button 
-                            onClick={handleLogout}
-                            className="fixed bottom-4 right-4 bg-gray-800/90 hover:bg-gray-700 text-gray-300 p-3 rounded-full shadow-lg z-50 transition-colors border border-gray-600"
-                            title="Logout"
-                        >
-                           <Icon name="Settings" size={20} />
-                        </button>
+                        {/* Logout button moved to Sidebar/Profile section in full UI, or settings page on mobile */}
+                        {/* We keep a mobile disconnect button in settings or just use the clear auth logic */}
                     </div>
                 </ErrorBoundary>
             );
