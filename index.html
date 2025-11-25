@@ -880,6 +880,38 @@
                                 {dashboardData.production.map(p => (
                                     <ProductionCard key={p.id} {...p} />
                                 ))}
+                                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+                                    <div>
+                                        <div className="text-gray-400 text-xs uppercase tracking-wider mb-1 font-medium">Plant Availability</div>
+                                        <div className="text-3xl font-bold text-white">{dashboardData.availability.actual}%</div>
+                                    </div>
+                                    <div className="w-full bg-gray-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                dashboardData.availability.actual < 90 ? 'bg-plant-red' : 
+                                                dashboardData.availability.actual < 95 ? 'bg-plant-orange' : 'bg-plant-green'
+                                            }`} 
+                                            style={{width: `${Math.min(dashboardData.availability.actual, 100)}%`}}
+                                        ></div>
+                                    </div>
+                                    <div className="mt-2 text-xs flex justify-between">
+                                        <span className={
+                                            dashboardData.availability.actual < 90 ? "text-red-400" : 
+                                            dashboardData.availability.actual < 95 ? "text-orange-400" : "text-green-400"
+                                        }>
+                                            {dashboardData.availability.actual < dashboardData.availability.target && (
+                                                <span className="flex items-center">
+                                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.848-.784 3.589-2.027a7.5 7.5 0 10-10.604-10.604c1.243.741 2.027 2.05 2.027 3.589h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Below target
+                                                </span>
+                                            )}
+                                            {dashboardData.availability.actual >= dashboardData.availability.target && "Target achieved"}
+                                        </span>
+                                        <span className="text-gray-500">{dashboardData.availability.target}% target</span>
+                                    </div>
+                                </div>
                             </div>
                             
                             {/* Gauges Section */}
@@ -966,7 +998,7 @@
                                         ))}
                                     </div>
                                 </div>
-                                <div className="chart-container h-80">
+                                <div className="chart-container">
                                     {window.Recharts ? (
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart 
