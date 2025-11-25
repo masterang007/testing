@@ -255,23 +255,27 @@
             const percentage = normalizedValue / max;
             const [displayVal, setDisplayVal] = useState(0);
             
-            useEffect(() => {
+useEffect(() => {
                 // Animate the value change
                 let start = displayVal;
                 let end = value || 0;
                 let duration = 1000; // 1 second
                 let startTime = null;
+                
                 const animationFrame = (timestamp) => {
                     if (!startTime) startTime = timestamp;
                     const progress = Math.min((timestamp - startTime) / duration, 1);
                     const ease = progress < 0.5 
                         ? 2 * progress * progress 
                         : -1 + (4 - 2 * progress) * progress;
+                    
                     setDisplayVal(start + (end - start) * ease);
+                    
                     if (progress < 1) {
                         requestAnimationFrame(animationFrame);
                     }
                 };
+                
                 requestAnimationFrame(animationFrame);
             }, [value]);
             
@@ -290,7 +294,10 @@
                         <svg viewBox="0 0 200 110" className="w-full h-full">
                             <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#374151" strokeWidth={12} strokeLinecap="round"/>
                             <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke={`url(#gradient-${title.replace(/[^a-zA-Z0-9]/g, '')})`} strokeWidth={12} strokeLinecap="round" strokeDasharray={`${Math.PI * 80}`} strokeDashoffset={`${Math.PI * 80 * (1 - percentage)}`} className="gauge-path transition-[stroke-dashoffset] duration-1000 ease-out"/>
-                            <defs><linearGradient id={`gradient-${title.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={color === 'text-plant-green' ? '#8cc63f' : color === 'text-plant-orange' ? '#d97706' : '#2563eb'} /><stop offset="100%" stopColor={color === 'text-plant-green' ? '#a3d95b' : color === 'text-plant-orange' ? '#fbbf24' : '#60a5fa'} /></linearGradient></defs>
+                            <defs><linearGradient id={`gradient-${title.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor={color === 'text-plant-green' ? '#8cc63f' : color === 'text-plant-orange' ? '#d97706' : '#2563eb'} />
+                                <stop offset="100%" stopColor={color === 'text-plant-green' ? '#a3d95b' : color === 'text-plant-orange' ? '#fbbf24' : '#60a5fa'} />
+                            </linearGradient></defs>
                         </svg>
                         <div className="absolute bottom-3 left-0 text-xs text-gray-500 font-mono font-bold">0</div>
                         <div className="absolute bottom-3 right-0 text-xs text-gray-500 font-mono font-bold">{max}</div>
