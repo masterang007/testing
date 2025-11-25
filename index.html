@@ -1071,19 +1071,35 @@
                         hour12: false
                     });
     
-                    // Update state and local storage
-                    setDashboardData(newData);
-                    setLastUpdated(`Data updated: ${uploadTime}`);
+	                    setDashboardData(newData);
+                    	setLastUploaded(uploadTime);
                     
-                    // Show appropriate message
-                    if (cloudSuccess) {
-                        setIsCloudAvailable(true);
-                        setLastUpdated(`Cloud synced: ${uploadTime}`);
-                        alert("✅ Data successfully loaded and synced to cloud!");
-                    } else {
-                        setIsCloudAvailable(false);
-                        setSyncError("Firebase sync failed - check console for details");
-                        alert("⚠️ Data loaded and saved locally, but cloud sync failed. Other browsers won't see this data until sync is fixed.");
+                    // Prepare data for saving
+                    const dataToSave = {
+                        dashboardData: newData,
+                        lastUploaded: uploadTime
+                    };
+                    
+                    // Save to cloud if available
+                    if(isCloudAvailable && user && activeConfig) {
+                        const { getFirestore, doc, setDoc } = window.firebaseModules;
+                        const db = getFirestore();
+                        const path = configSource === 'user' 
+                            ? doc(db, 'dashboard_data', 'live_status') 
+                            : doc(db, 'artifacts', (typeof __app_id !== 'undefined' ? __app_id : 'default'), 'public', 'data', 'dashboard_state', 'current_state');
+                        
+                        try {
+                            await setDoc(path, { 
+                                dashboardData: newData, 
+                                lastUpdated: "Data updated at: " + new Date().toLocaleTimeString(),
+                                lastUploaded: uploadTime,
+                                updatedBy: user.uid
+                            });
+                            setLastUpdated("Synced to Cloud - " + new Date().toLocaleTimeString());
+                        } catch (error) {
+                            console.error("Cloud sync failed:", error);
+                            alert("Failed to sync to cloud. Data saved locally only.");
+                        }
                     }
                 };
                 
