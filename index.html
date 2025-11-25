@@ -550,9 +550,11 @@
             };
 
             const latestTime = useMemo(() => {
-                if (!hourlyData || hourlyData.length === 0) return "N/A";
+                if (!hourlyData || hourlyData.length === 0) return "Waiting for data...";
                 const lastLog = hourlyData[hourlyData.length - 1];
-                return lastLog.time || "N/A";
+                const today = new Date();
+                const dateStr = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                return `${dateStr}, ${lastLog.time || "00:00"}`;
             }, [hourlyData]);
 
             return (
@@ -563,7 +565,7 @@
                             <h1 className="text-2xl font-bold">Daily Report</h1>
                             <p className="text-gray-400 text-sm flex items-center gap-2">
                                 <Icon name="Activity" size={14} className="text-plant-green" />
-                                Data as of: Today, {latestTime}
+                                Data as of: {latestTime}
                             </p>
                         </div>
                         <div className="flex gap-2">
