@@ -47,13 +47,13 @@
 
     <!-- Firebase SDKs (Modular) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Expose Firebase globals for the React app
         window.firebaseModules = { 
-            initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
+            initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
             getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch
         };
         window.dispatchEvent(new Event('firebase-ready'));
@@ -374,11 +374,9 @@
                     const text = await selectedFile.text();
                     const lines = text.split('\n').filter(l => l.trim().length > 0);
                     
-                    // Auto-detect format based on where "Time" appears in the header
                     const headerRow = parseCSVLine(lines[0]);
+                    // Check if Time is first column (V2) or further right (Original)
                     let timeColIndex = headerRow.findIndex(h => h && h.trim().toLowerCase() === 'time');
-                    
-                    // Fallback if logic fails, though header search is robust
                     if (timeColIndex === -1) timeColIndex = 5; 
 
                     let lastLogObj = null;
@@ -386,12 +384,10 @@
                     for (let i = 1; i < lines.length; i++) {
                         const row = parseCSVLine(lines[i]);
                         
-                        // --- 1. Left Side: Daily Summary (Cols 0-3) ---
-                        // Only parse summary if Time is at index > 3 (meaning there's space on the left)
+                        // --- 1. Summary Data (Only if space exists on left) ---
                         if (timeColIndex > 3 && row.length >= 4) {
                             const paramName = row[0]?.trim();
                             const unit = row[1]?.trim();
-                            // Remove quotes and commas for numeric value parsing
                             const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
                             const rawTarget = row[3]?.trim().replace(/"/g, '').replace(/,/g, '');
 
@@ -407,7 +403,7 @@
                                     id: mapping.id,
                                     category: mapping.cat,
                                     name: paramName,
-                                    value: rawActual, // Keep original string formatting for display (e.g. "1,800")
+                                    value: rawActual, 
                                     unit: unit,
                                     target: rawTarget,
                                     status: status
@@ -416,12 +412,10 @@
                             }
                         }
 
-                        // --- 2. Right Side: Hourly Logs (Cols TimeIndex+) ---
+                        // --- 2. Hourly Logs ---
                         if (row.length > timeColIndex) {
                             const timeVal = row[timeColIndex]?.trim();
-                            // Validate it looks like time (e.g. 07:00:00 or 7:00)
                             if (timeVal && timeVal.includes(':')) {
-                                // Normalize 1:00:00 -> 01:00
                                 let [h, m] = timeVal.split(':');
                                 if (h.length === 1) h = '0' + h;
                                 const cleanTime = `${h}:${m}`;
@@ -444,23 +438,20 @@
                                     bc101b: pFloat(6),     // Time + 6
                                     steam_dht: pFloat(7),  // Time + 7
                                     header_44: pFloat(8),  // Time + 8
-                                    // skip Time + 9 (Live Header)
                                     adm2_flow: pFloat(10), // Time + 10
                                     adm1_flow: pFloat(11)  // Time + 11
                                 };
                                 
                                 const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
                                 batch.set(docRef, logObj);
-                                lastLogObj = logObj; // Keep track of latest for summary update
+                                lastLogObj = logObj;
                                 updatesCount++;
                             }
                         }
                     }
 
-                    // If we parsed logs (specifically format V2 style where we rely on logs for some values),
-                    // we can update the summary with the latest log values to keep them in sync.
-                    // This ensures that "Plant Power" on the card matches the last point on the chart.
-                    if (lastLogObj) {
+                    // Sync Summary with Latest Log if V2 format
+                    if (lastLogObj && timeColIndex === 0) {
                         const summaryUpdates = [
                             { id: 'plant_power', val: lastLogObj.power },
                             { id: 'power_gen', val: lastLogObj.gen },
@@ -476,7 +467,6 @@
                         
                         summaryUpdates.forEach(upd => {
                             const ref = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', upd.id);
-                            // Use merge to update value without wiping target/name if they exist
                             batch.set(ref, { value: upd.val }, { merge: true });
                         });
                     }
@@ -743,7 +733,20 @@
         };
 
         const App = () => {
-            const [authenticated, setAuthenticated] = useState(false);
+            // Lazy Init to prevent Flicker/Crash
+            const [authenticated, setAuthenticated] = useState(() => {
+                try {
+                    const stored = localStorage.getItem('rpcm_auth_data');
+                    if (stored) {
+                        const { timestamp } = JSON.parse(stored);
+                        if (Date.now() - timestamp < 2592000000) return true;
+                    }
+                    return !!sessionStorage.getItem('rpcm_authenticated');
+                } catch {
+                    return false;
+                }
+            });
+            
             const [activeTab, setActiveTab] = useState('dashboard');
             const [user, setUser] = useState(null);
             const [firebaseReady, setFirebaseReady] = useState(false);
@@ -768,10 +771,11 @@
             useEffect(() => {
                 if (!firebaseReady) return;
 
-                const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
+                const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
                 
                 try {
-                    const app = initializeApp(firebaseConfig);
+                    // Prevent duplicate initialization
+                    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
                     const auth = getAuth(app);
                     
                     const initAuth = async () => {
@@ -840,32 +844,6 @@
                     unsubLogs();
                 };
             }, [user, firebaseReady]);
-
-            // Session Auth Logic with 30-Day Persistence
-            useEffect(() => {
-                // Check Local Storage (Long term)
-                const storedAuth = localStorage.getItem('rpcm_auth_data');
-                if (storedAuth) {
-                    try {
-                        const { timestamp } = JSON.parse(storedAuth);
-                        // 30 days in milliseconds
-                        if (Date.now() - timestamp < 2592000000) {
-                            setAuthenticated(true);
-                            return;
-                        } else {
-                            localStorage.removeItem('rpcm_auth_data'); // Expired
-                        }
-                    } catch (e) {
-                        localStorage.removeItem('rpcm_auth_data');
-                    }
-                }
-
-                // Check Session Storage (Short term)
-                const sessionAuth = sessionStorage.getItem('rpcm_authenticated');
-                if (sessionAuth) {
-                    setAuthenticated(true);
-                }
-            }, []);
             
             const handleLogout = () => {
                 localStorage.removeItem('rpcm_auth_data');
