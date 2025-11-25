@@ -258,11 +258,19 @@
         const ErrorBoundary = class extends React.Component {
             constructor(props) {
                 super(props);
-                this.state = { hasError: false };
+                this.state = { hasError: false, error: null };
             }
-            static getDerivedStateFromError(error) { return { hasError: true }; }
+            static getDerivedStateFromError(error) { return { hasError: true, error }; }
             render() {
-                if (this.state.hasError) return <div className="p-8 text-center text-status-crit">System Malfunction. Refresh Required.</div>;
+                if (this.state.hasError) return (
+                    <div className="min-h-screen flex items-center justify-center bg-plant-dark text-status-crit p-8 text-center">
+                        <div>
+                            <h2 className="text-2xl font-bold mb-2">System Error</h2>
+                            <p className="text-gray-400 mb-4">The application encountered a critical error.</p>
+                            <button onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }} className="bg-gray-800 px-4 py-2 rounded border border-gray-700 hover:bg-gray-700 text-white">Reset & Reload</button>
+                        </div>
+                    </div>
+                );
                 return this.props.children;
             }
         };
@@ -552,8 +560,15 @@
             const latestTime = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return "Waiting for data...";
                 const lastLog = hourlyData[hourlyData.length - 1];
-                const today = new Date();
-                const dateStr = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                
+                // Get current date
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+                
                 return `${dateStr}, ${lastLog.time || "00:00"}`;
             }, [hourlyData]);
 
@@ -735,7 +750,6 @@
         };
 
         const App = () => {
-            // Lazy Init to prevent Flicker/Crash
             const [authenticated, setAuthenticated] = useState(() => {
                 try {
                     const stored = localStorage.getItem('rpcm_auth_data');
@@ -753,11 +767,9 @@
             const [user, setUser] = useState(null);
             const [firebaseReady, setFirebaseReady] = useState(false);
             
-            // Data State
             const [dailyData, setDailyData] = useState(initialDailySummary);
             const [hourlyData, setHourlyData] = useState(initialHourlyData);
 
-            // Wait for Firebase Modules
             useEffect(() => {
                 const checkFirebase = () => {
                     if (window.firebaseModules) {
@@ -769,14 +781,12 @@
                 return () => window.removeEventListener('firebase-ready', checkFirebase);
             }, []);
 
-            // Auth & Init
             useEffect(() => {
                 if (!firebaseReady) return;
 
                 const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
                 
                 try {
-                    // Prevent duplicate initialization
                     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
                     const auth = getAuth(app);
                     
@@ -800,7 +810,6 @@
                 }
             }, [firebaseReady]);
 
-            // Data Fetching
             useEffect(() => {
                 if (!user || !firebaseReady) return;
                 
@@ -809,7 +818,6 @@
                 const appId = getAppId();
                 const publicDataPath = `artifacts/${appId}/public/data`;
 
-                // 1. Listen to Daily Summary
                 const summaryQuery = query(collection(db, publicDataPath, 'daily_summary'));
                 const unsubSummary = onSnapshot(summaryQuery, (snapshot) => {
                     if (snapshot.empty) return; 
@@ -832,7 +840,6 @@
                     setDailyData(newSummary);
                 }, (err) => console.error("Summary sync error:", err));
 
-                // 2. Listen to Hourly Logs
                 const logsQuery = query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time'));
                 const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
                     if (snapshot.empty) return;
@@ -869,58 +876,58 @@
             const dbInstance = firebaseReady && window.firebaseModules ? window.firebaseModules.getFirestore() : null;
             
             return (
-                <ErrorBoundary>
-                    <div className="min-h-screen bg-plant-dark">
-                        {/* Sidebar for Desktop */}
-                        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
-                        
-                        {/* Bottom Nav for Mobile */}
-                        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                        
-                        {activeTab === 'dashboard' && <Dashboard dailyData={dailyData} hourlyData={hourlyData} />}
-                        {activeTab === 'logs' && (
-                             <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
-                                <h2 className="text-xl mb-4">Hourly Logs View</h2>
-                                <div className="glass-panel p-4 rounded-xl overflow-x-auto">
-                                    <table className="w-full text-sm text-left whitespace-nowrap">
-                                        <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
-                                            <tr>
-                                                <th className="px-6 py-3">Time</th>
-                                                <th className="px-6 py-3">Power</th>
-                                                <th className="px-6 py-3">Gen</th>
-                                                <th className="px-6 py-3">Steam</th>
-                                                <th className="px-6 py-3">PX Rate</th>
+                <div className="min-h-screen bg-plant-dark">
+                    <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+                    
+                    <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+                    
+                    {activeTab === 'dashboard' && <Dashboard dailyData={dailyData} hourlyData={hourlyData} />}
+                    {activeTab === 'logs' && (
+                            <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
+                            <h2 className="text-xl mb-4">Hourly Logs View</h2>
+                            <div className="glass-panel p-4 rounded-xl overflow-x-auto">
+                                <table className="w-full text-sm text-left whitespace-nowrap">
+                                    <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
+                                        <tr>
+                                            <th className="px-6 py-3">Time</th>
+                                            <th className="px-6 py-3">Power</th>
+                                            <th className="px-6 py-3">Gen</th>
+                                            <th className="px-6 py-3">Steam</th>
+                                            <th className="px-6 py-3">PX Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {hourlyData.map((row, i) => (
+                                            <tr key={i} className="border-b border-gray-700 hover:bg-gray-800">
+                                                <td className="px-6 py-4 font-mono">{row.time}</td>
+                                                <td className="px-6 py-4">{row.power}</td>
+                                                <td className="px-6 py-4">{row.gen}</td>
+                                                <td className="px-6 py-4">{row.steam}</td>
+                                                <td className="px-6 py-4">{row.px}</td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {hourlyData.map((row, i) => (
-                                                <tr key={i} className="border-b border-gray-700 hover:bg-gray-800">
-                                                    <td className="px-6 py-4 font-mono">{row.time}</td>
-                                                    <td className="px-6 py-4">{row.power}</td>
-                                                    <td className="px-6 py-4">{row.gen}</td>
-                                                    <td className="px-6 py-4">{row.steam}</td>
-                                                    <td className="px-6 py-4">{row.px}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                             </div>
-                        )}
-                        {activeTab === 'settings' && (
-                            <Settings 
-                                user={user} 
-                                db={dbInstance} 
-                                appId={getAppId()} 
-                            />
-                        )}
-                    </div>
-                </ErrorBoundary>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            </div>
+                    )}
+                    {activeTab === 'settings' && (
+                        <Settings 
+                            user={user} 
+                            db={dbInstance} 
+                            appId={getAppId()} 
+                        />
+                    )}
+                </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(
+            <ErrorBoundary>
+                <App />
+            </ErrorBoundary>
+        );
     </script>
 </body>
 </html>
