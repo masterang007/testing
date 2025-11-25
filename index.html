@@ -538,6 +538,7 @@ useEffect(() => {
             const [chartView, setChartView] = useState('production');
             const fileInputRef = useRef(null);
             const [lastUpdated, setLastUpdated] = useState('Initializing...');
+			const [lastUploaded, setLastUploaded] = useState('Not available');
             const [user, setUser] = useState(null);
             const [isSyncing, setIsSyncing] = useState(false);
             const [isCloudAvailable, setIsCloudAvailable] = useState(false);
