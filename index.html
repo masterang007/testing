@@ -1101,6 +1101,11 @@
                             alert("Failed to sync to cloud. Data saved locally only.");
                         }
                     }
+					// Always save to local storage
+					localStorage.setItem('rpcm_dashboard_data_v17', JSON.stringify(dataToSave));
+					alert("Data successfully loaded and saved!");
+
+					
                 };
                 
                 reader.onerror = (e) => {
@@ -1129,17 +1134,16 @@
                                     <h1 className="font-bold text-white flex items-center gap-2">
                                         Operations Monitor
                                         <span className={`inline-block w-2 h-2 rounded-full ${
-                                            isSyncing ? 'bg-blue-500 animate-pulse' : 
                                             isCloudAvailable ? 'bg-green-500' : 'bg-yellow-500'
                                         }`}></span>
                                     </h1>
-                                    <p className="text-xs text-gray-400">{lastUpdated}</p>
-                                    {syncError && (
-                                        <p className="text-xs text-red-400 flex items-center mt-1">
-                                            <span className="cloud-status-indicator cloud-status-error mr-1"></span>
-                                            {syncError}
-                                        </p>
-                                    )}
+
+									<div className="flex items-center gap-1 text-xs text-gray-400">
+											<Icons.Clock className="w-3 h-3" />
+										<span>Last upload: {lastUploaded}</span>
+										</div>
+
+									
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
