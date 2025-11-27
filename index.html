@@ -116,20 +116,6 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
-        .debug-info {
-            background: rgba(16, 185, 129, 0.1);
-            border-left: 3px solid #10b981;
-            padding: 0.5rem 1rem;
-            margin-top: 1rem;
-            font-size: 0.875rem;
-        }
-        .error-info {
-            background: rgba(239, 68, 68, 0.1);
-            border-left: 3px solid #ef4444;
-            padding: 0.5rem 1rem;
-            margin-top: 1rem;
-            font-size: 0.875rem;
-        }
     </style>
 </head>
 <body>
@@ -364,11 +350,11 @@
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Current Data Path</h3>
                                 <p className="text-sm text-gray-300">
-                                    This dashboard is reading from the correct Firestore path used by your export_to_csv_parser.txt script:
+                                    This dashboard is reading from the correct Firestore path used by your Python script:
                                 </p>
                                 <div className="mt-2 p-3 bg-gray-900 rounded font-mono text-xs">
-                                    <code>artifacts/dashboard-fced7/public/data/daily_summary</code><br />
-                                    <code>artifacts/dashboard-fced7/public/data/hourly_logs</code>
+                                    <code>RP_Daily_Report</code><br />
+                                    <code>RP_Hourly_Trends</code>
                                 </div>
                             </div>
                             
@@ -422,36 +408,48 @@
                 return item ? item.unit : '';
             };
             
+            // Process and format hourly data
+            const processedHourlyData = useMemo(() => {
+                return hourlyData.map(item => ({
+                    time: parseTime(item.Timestamp),
+                    plant_power: item.Plant_Power || 0,
+                    stg_gen: item.STG_Power || 0
+                }));
+            }, [hourlyData]);
+            
             // Limit the chart to the specified number of hours
             const chartData = useMemo(() => {
-                if (!hourlyData || hourlyData.length === 0) return [];
+                if (!processedHourlyData || processedHourlyData.length === 0) return [];
                 
                 // Filter and sort hourly data
-                return hourlyData
+                return processedHourlyData
                     .filter(log => log.time && log.time !== "00:00" && log.plant_power > 0)
                     .sort((a, b) => {
                         // Try to sort by original timestamp if available
-                        if (a.original_time && b.original_time) {
-                            return new Date(a.original_time) - new Date(b.original_time);
+                        const timeA = hourlyData.find(h => parseTime(h.Timestamp) === a.time)?.Timestamp;
+                        const timeB = hourlyData.find(h => parseTime(h.Timestamp) === b.time)?.Timestamp;
+                        
+                        if (timeA && timeB) {
+                            return new Date(timeA) - new Date(timeB);
                         }
                         return a.time.localeCompare(b.time);
                     })
                     .slice(-chartHours); // Limit to specified number of hours
-            }, [hourlyData, chartHours]);
+            }, [processedHourlyData, hourlyData, chartHours]);
             
             const latestTime = useMemo(() => {
                 if (isLoading) return "Loading...";
                 if (!hourlyData || hourlyData.length === 0) return "No recent data";
                 
-                // Filter out invalid entries and get the most recent valid time
+                // Get the most recent valid timestamp
                 const validLogs = hourlyData
-                    .filter(log => log.time && log.time !== "00:00" && !log.time.includes('Invalid'))
-                    .sort((a, b) => new Date(b.original_time || b.time) - new Date(a.original_time || a.time));
+                    .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
+                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
                 
                 if (validLogs.length === 0) return "No valid hourly data";
                 
                 const lastLog = validLogs[0];
-                return lastLog.time || "Unknown time";
+                return parseTime(lastLog.Timestamp) || "Unknown time";
             }, [hourlyData, isLoading]);
             
             const CustomTooltip = ({ active, payload, label }) => {
@@ -499,7 +497,7 @@
                         <div className="text-center">
                             <div className="w-16 h-16 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-gray-400">Loading production data from Firestore...</p>
-                            <p className="text-xs text-gray-500 mt-2">Path: artifacts/{APP_ID}/public/data</p>
+                            <p className="text-xs text-gray-500 mt-2">Path: RP_Daily_Report</p>
                         </div>
                     </div>
                 );
@@ -592,7 +590,11 @@
                         </div>
                         <div className="h-80 md:h-96">
                             <ResponsiveContainer width="100%" height="100%">
-                                {chartData.length > 0 ? (
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                ) : chartData.length > 0 ? (
                                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="gradPower" x1="0" y1="0" x2="0" y2="1">
@@ -671,14 +673,14 @@
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
                             {[
-                                { id: 'total_power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400' },
-                                { id: 'hac_consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400' },
-                                { id: 'nat_gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400' },
-                                { id: 'caustic', label: 'Caustic', icon: 'Activity', color: 'text-pink-400' },
-                                { id: 'cmb_cat', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400' },
-                                { id: 'cmb_rec', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400' },
+                                { param: 'Total Power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400' },
+                                { param: 'HAc Consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400' },
+                                { param: 'Natural Gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400' },
+                                { param: 'Caustic (NaOH)', label: 'Caustic', icon: 'Activity', color: 'text-pink-400' },
+                                { param: 'CMB Catalyst', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400' },
+                                { param: 'Equiv. CMB Recovery', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400' },
                             ].map(metric => (
-                                <div key={metric.id} className="bg-plant-bg/50 p-3 sm:p-4 rounded-xl border border-plant-border hover:border-accent-primary/30 transition-colors">
+                                <div key={metric.param} className="bg-plant-bg/50 p-3 sm:p-4 rounded-xl border border-plant-border hover:border-accent-primary/30 transition-colors">
                                     <div className={`text-xs font-medium mb-1 ${metric.color} flex items-center gap-1`}>
                                         <Icon name={metric.icon} size={12} />
                                         {metric.label}
@@ -686,14 +688,14 @@
                                     <div className="text-xl font-bold text-white mb-0.5">
                                         {isLoading ? (
                                             <div className="skeleton w-16 h-6 rounded"></div>
-                                        ) : formatNumber(getVal('utility', metric.id))}
+                                        ) : formatNumber(getVal('utility', metric.param))}
                                     </div>
                                     <div className="text-xs">
                                         <span className="text-gray-500">Target:&nbsp;</span>
                                         <span className="text-gray-300 font-mono">
                                             {isLoading ? (
                                                 <div className="skeleton w-12 h-4 rounded inline-block"></div>
-                                            ) : formatNumber(getTarget('utility', metric.id))}
+                                            ) : formatNumber(getTarget('utility', metric.param))}
                                         </span>
                                     </div>
                                 </div>
@@ -703,7 +705,7 @@
                     
                     {/* Data Freshness Footer */}
                     <div className="text-center text-xs text-gray-500 mt-4 pt-4 border-t border-plant-border">
-                        <p>Data automatically refreshed from Firestore • Last update: {new Date().toLocaleString('en-US', { 
+                        <p>Data automatically refreshed from Emerson DeltaV system • Last update: {new Date().toLocaleString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             hour: '2-digit', 
@@ -759,48 +761,19 @@
             );
         };
         
-        const BottomNav = ({ activeTab, onTabChange }) => {
-            const items = [
-                { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dash' },
-                { id: 'logs', icon: 'Table2', label: 'Logs' },
-                { id: 'settings', icon: 'Settings', label: 'Setup' },
-            ];
-            
-            return (
-                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb shadow-2xl">
-                    {items.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
-                                activeTab === item.id 
-                                ? 'text-accent-primary scale-105' 
-                                : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                            <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-accent-primary/10' : ''}`}>
-                                <Icon name={item.icon} size={22} />
-                            </div>
-                            <span className="text-[10px] mt-1 font-medium">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            );
-        };
-        
         const HourlyLogs = ({ hourlyData, isLoading, onRefresh, loadError }) => {
             // Filter and sort hourly data for display
             const sortedLogs = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return [];
                 
                 return [...hourlyData]
-                    .filter(log => log.time && log.time !== "00:00" && !log.time.includes('Invalid'))
-                    .sort((a, b) => {
-                        if (a.original_time && b.original_time) {
-                            return new Date(b.original_time) - new Date(a.original_time);
-                        }
-                        return b.time.localeCompare(a.time);
-                    });
+                    .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
+                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
+                    .map(log => ({
+                        time: parseTime(log.Timestamp),
+                        plant_power: log.Plant_Power || 0,
+                        stg_gen: log.STG_Power || 0
+                    }));
             }, [hourlyData]);
             
             if (loadError) {
@@ -830,7 +803,7 @@
                     <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
                         <div className="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                         <p>Loading hourly logs from Firestore...</p>
-                        <p className="text-xs text-gray-500 mt-2">Path: artifacts/{APP_ID}/public/data/hourly_logs</p>
+                        <p className="text-xs text-gray-500 mt-2">Path: RP_Hourly_Trends</p>
                     </div>
                 );
             }
@@ -945,7 +918,7 @@
             const [lastUpdate, setLastUpdate] = useState(null);
             
             // Data State
-            const [dailyData, setDailyData] = useState({ production: [], utility: [] });
+            const [dailyData, setDailyData] = useState([]);
             const [hourlyData, setHourlyData] = useState([]);
             
             useEffect(() => {
@@ -1015,57 +988,55 @@
                 let dailyUnsub, hourlyUnsub;
                 let initialLoad = true;
                 
-                const publicDataPath = `artifacts/${APP_ID}/public/data`;
-                
                 try {
                     // Set up subscription for daily summary data
-                    console.log("Subscribing to daily_summary collection");
+                    console.log("Subscribing to RP_Daily_Report collection");
                     dailyUnsub = onSnapshot(
-                        collection(db, publicDataPath, 'daily_summary'), 
+                        collection(db, "RP_Daily_Report"), 
                         (snapshot) => {
-                            console.log(`Received ${snapshot.size} documents for daily_summary`);
-                            const newData = { production: [], utility: [] };
+                            console.log(`Received ${snapshot.size} documents for daily data`);
+                            const newData = [];
                             snapshot.forEach(doc => {
                                 const data = doc.data();
-                                if (newData[data.category]) {
-                                    newData[data.category].push(data);
-                                } else {
-                                    console.warn("Unknown category:", data.category);
+                                if (data.Parameter && data.Parameter.trim() !== '') {
+                                    newData.push(data);
                                 }
                             });
                             
-                            setDailyData(prev => {
-                                // Only set loading to false after first data load
-                                if (initialLoad && (newData.production.length > 0 || newData.utility.length > 0)) {
-                                    console.log("Initial data load complete");
-                                    setIsLoading(false);
-                                    initialLoad = false;
-                                    setLastUpdate(new Date());
-                                }
-                                return {...prev, ...newData};
-                            });
+                            setDailyData(newData);
+                            
+                            // Only set loading to false after first data load
+                            if (initialLoad && newData.length > 0) {
+                                console.log("Initial daily data load complete");
+                                setIsLoading(false);
+                                initialLoad = false;
+                                setLastUpdate(new Date());
+                            }
                         },
                         (error) => {
-                            console.error("Error fetching daily summary:", error);
+                            console.error("Error fetching daily data:", error);
                             setLoadError({ message: "Error loading daily data: " + error.message });
                             setIsLoading(false);
                         }
                     );
                     
                     // Set up subscription for hourly logs
-                    console.log("Subscribing to hourly_logs collection");
+                    console.log("Subscribing to RP_Hourly_Trends collection");
                     hourlyUnsub = onSnapshot(
-                        query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time', 'desc')),
+                        query(collection(db, "RP_Hourly_Trends"), orderBy('Timestamp', 'desc')),
                         (snapshot) => {
-                            console.log(`Received ${snapshot.size} documents for hourly_logs`);
+                            console.log(`Received ${snapshot.size} documents for hourly data`);
                             const logs = [];
                             snapshot.forEach(doc => {
-                                logs.push(doc.data());
+                                const data = doc.data();
+                                if (data.Timestamp && !data.Timestamp.includes('Resize')) {
+                                    logs.push(data);
+                                }
                             });
                             setHourlyData(logs);
                         },
                         (error) => {
-                            console.error("Error fetching hourly logs:", error);
+                            console.error("Error fetching hourly data:", error);
                             setLoadError({ message: "Error loading hourly data: " + error.message });
                         }
                     );
@@ -1088,7 +1059,7 @@
                 setLoadError(null);
                 setIsLoading(true);
                 // Force re-subscription by re-initializing state
-                setDailyData({ production: [], utility: [] });
+                setDailyData([]);
                 setHourlyData([]);
                 // Firestore will automatically re-fetch data due to the onSnapshot listeners
             };
