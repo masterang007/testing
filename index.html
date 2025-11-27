@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RPCM Operations Monitor</title>
+    <title>RPCM Production Monitor</title>
     <!-- iOS SETTINGS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,13 +19,14 @@
             theme: {
                 extend: {
                     colors: {
-                        'plant-green': '#8cc63f',
-                        'plant-dark': '#0d1117',
-                        'plant-card': '#161b22',
-                        'plant-border': '#30363d',
-                        'status-ok': '#238636',
-                        'status-warn': '#d29922',
-                        'status-crit': '#da3633',
+                        'plant-bg': '#0f172a',
+                        'plant-card': '#1e293b',
+                        'plant-border': '#334155',
+                        'accent-primary': '#3b82f6', // Blue
+                        'accent-secondary': '#8b5cf6', // Purple
+                        'status-ok': '#10b981',
+                        'status-warn': '#f59e0b',
+                        'status-crit': '#ef4444',
                     }
                 }
             }
@@ -51,7 +52,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Expose Firebase globals for the React app
         window.firebaseModules = { 
             initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
             getFirestore, collection, doc, setDoc, onSnapshot, query, orderBy, writeBatch
@@ -60,45 +60,51 @@
     </script>
 
     <style>
-        body { background-color: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .glass-panel { background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; }
-        .stat-card { transition: all 0.2s ease; }
-        .stat-card:hover { transform: translateY(-2px); border-color: #8cc63f; }
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0d1117; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #8cc63f; }
+        body { background-color: #0f172a; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        .glass-panel { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .metric-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
         input[type="file"]::file-selector-button {
-            background-color: #1f2937;
-            color: #9ca3af;
-            border: 1px solid #374151;
-            padding: 0.25rem 0.75rem;
+            background-color: #334155;
+            color: #e2e8f0;
+            border: none;
+            padding: 0.5rem 1rem;
             border-radius: 0.375rem;
             margin-right: 1rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        input[type="file"]::file-selector-button:hover {
-            background-color: #374151;
-            color: #e5e7eb;
-        }
-        .custom-checkbox {
-            accent-color: #8cc63f;
-        }
+        input[type="file"]::file-selector-button:hover { background-color: #475569; }
+        
+        .custom-checkbox { accent-color: #3b82f6; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
         const { 
-            LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-            Tooltip, ResponsiveContainer, ReferenceLine, Legend 
+            LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+            Tooltip, ResponsiveContainer, ReferenceLine, Legend, ComposedChart
         } = Recharts;
 
-        // --- Firebase Config & Initialization ---
+        // --- Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
             authDomain: "dashboard-fced7.firebaseapp.com",
@@ -107,98 +113,67 @@
             messagingSenderId: "893864259222",
             appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
         };
-
         const getAppId = () => typeof __app_id !== 'undefined' ? __app_id : 'dashboard-fced7';
-
-        // --- Data Defaults ---
-        const initialDailySummary = {
-            production: [], efficiency: [], power: [], steam: [], process: [], utility: [], reactor: []
-        };
-
-        const initialHourlyData = [
-            { time: '07:00', power: 0, px: 0, steam: 0 }
-        ];
-
-        // --- Parameter Mapping (For V1 Files) ---
-        const PARAM_MAPPING_V1 = {
-            'CTA Production': { cat: 'production', id: 'cta_prod' },
-            'PTA Production': { cat: 'production', id: 'pta_prod' },
-            'Plant Availability': { cat: 'efficiency', id: 'plant_avail' },
-            'Plant Utilization Rate': { cat: 'efficiency', id: 'plant_util' },
-            'Total Conversion Cost': { cat: 'efficiency', id: 'conv_cost' },
-            'Plant Power': { cat: 'power', id: 'plant_power' },
-            'Power Gen': { cat: 'power', id: 'power_gen' },
-            'BC101A': { cat: 'power', id: 'bc101a' },
-            'BC101B': { cat: 'power', id: 'bc101b' },
-            'Steam FLEXSYS': { cat: 'steam', id: 'steam_flex' },
-            'Steam to DHT': { cat: 'steam', id: 'steam_dht' },
-            '4.4 Steam Header': { cat: 'steam', id: 'header_44' },
-            'PX Rate': { cat: 'process', id: 'px_rate' },
-            'ADM1 Flow': { cat: 'process', id: 'adm1_flow' },
-            'ADM2 Flow': { cat: 'process', id: 'adm2_flow' },
-            'Total Power': { cat: 'utility', id: 'total_power_cons' },
-            'HAC Cons.': { cat: 'utility', id: 'hac_cons' },
-            'Excess PX': { cat: 'utility', id: 'excess_px' },
-            'CMB Catalyst': { cat: 'utility', id: 'cmb_catalyst' },
-            'Rx A Temp': { cat: 'reactor', id: 'rx_a_temp' },
-            'Rx B Temp': { cat: 'reactor', id: 'rx_b_temp' },
-            'Rx A VO2': { cat: 'reactor', id: 'rx_a_vo2' }, 
-            'Rx A VO₂': { cat: 'reactor', id: 'rx_a_vo2' },
-            'Rx B VO2': { cat: 'reactor', id: 'rx_b_vo2' },
-            'Rx B VO₂': { cat: 'reactor', id: 'rx_b_vo2' }
-        };
 
         // --- Icons ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
-                Activity: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
+                Factory: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22h20V2l-7 9V7l-6 9V8L2 22z"/></svg>,
                 Zap: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>,
-                Factory: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>,
-                Droplets: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path></svg>,
-                BarChart3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>,
-                AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-                TrendingUp: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
-                Thermometer: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>,
-                Settings: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
-                UploadCloud: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>,
-                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Activity: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
+                Droplets: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>,
+                LayoutDashboard: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+                Table2: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>,
+                Settings: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+                Upload: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+                Fuel: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 22v-8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8"/><path d="M8 12V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/></svg>,
+                Calendar: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
             };
             return icons[name] || icons.Activity;
         };
 
+        // --- Mappings ---
+        const PARAM_MAPPING_PROD = {
+            'CTA Production': { cat: 'production', id: 'cta_prod' },
+            'PTA Production': { cat: 'production', id: 'pta_prod' },
+            'Availability': { cat: 'production', id: 'availability' },
+            'Total Power': { cat: 'utility', id: 'total_power' },
+            'HAc Consum': { cat: 'utility', id: 'hac_consum' },
+            'Natural Gas': { cat: 'utility', id: 'nat_gas' },
+            'CMB Catalyst': { cat: 'utility', id: 'cmb_cat' },
+            'Equiv. CMB Recovery': { cat: 'utility', id: 'cmb_rec' },
+            'Caustic (NaOH)': { cat: 'utility', id: 'caustic' }
+        };
+
+        const initialDailySummary = { production: [], utility: [], mtd: [] };
+        const initialHourlyData = [];
+
         // --- Components ---
 
-        const Card = ({ title, children, className = "" }) => (
-            <div className={`glass-panel rounded-xl p-5 ${className}`}>
-                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-4">{title}</h3>
-                {children}
+        const StatCard = ({ title, value, unit, target, icon, trend }) => (
+            <div className="metric-card rounded-xl p-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Icon name={icon} size={60} />
+                </div>
+                <div className="relative z-10">
+                    <div className="text-sm text-gray-400 font-medium mb-1 flex items-center gap-2">
+                        <Icon name={icon} size={16} className="text-accent-primary" />
+                        {title}
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <span className="text-2xl font-bold text-white">{value}</span>
+                        <span className="text-xs text-gray-500 mb-1">{unit}</span>
+                    </div>
+                    {target && (
+                        <div className="mt-2 pt-2 border-t border-white/5 flex justify-between items-center text-xs">
+                            <span className="text-gray-500">Target</span>
+                            <span className="font-mono text-accent-secondary">{target}</span>
+                        </div>
+                    )}
+                </div>
             </div>
         );
-
-        const MetricRow = ({ label, value, unit, target, status }) => {
-            const getStatusColor = (s) => {
-                if (s === 'ok') return 'text-status-ok';
-                if (s === 'warn') return 'text-status-warn';
-                if (s === 'crit') return 'text-status-crit';
-                return 'text-gray-300';
-            };
-
-            return (
-                <div className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0">
-                    <span className="text-sm text-gray-400">{label}</span>
-                    <div className="text-right">
-                        <div className={`text-lg font-bold font-mono ${getStatusColor(status)}`}>
-                            {value} <span className="text-xs text-gray-500 font-normal">{unit}</span>
-                        </div>
-                        {target !== null && target !== undefined && target !== '' && (
-                            <div className="text-xs text-gray-600">
-                                Target: {target}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
 
         const PasswordGate = ({ onLogin }) => {
             const [password, setPassword] = useState('');
@@ -215,135 +190,41 @@
             };
 
             return (
-                <div className="min-h-screen flex items-center justify-center bg-plant-dark p-4">
-                    <div className="glass-panel p-8 rounded-2xl w-full max-w-md">
+                <div className="min-h-screen flex items-center justify-center bg-plant-bg p-4">
+                    <div className="glass-panel p-8 rounded-2xl w-full max-w-md relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-primary to-accent-secondary"></div>
                         <div className="flex justify-center mb-6">
-                            <div className="w-16 h-16 bg-plant-green/20 rounded-full flex items-center justify-center text-plant-green">
+                            <div className="w-16 h-16 bg-accent-primary/20 rounded-2xl flex items-center justify-center text-accent-primary">
                                 <Icon name="Factory" size={32} />
                             </div>
                         </div>
-                        <h1 className="text-2xl font-bold text-center mb-2">RPCM Monitor</h1>
-                        <p className="text-gray-400 text-center mb-8">Enter access code to view daily report</p>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Access Code"
-                                    className="w-full bg-plant-dark border border-plant-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-plant-green transition-colors"
-                                    autoFocus
-                                />
-                            </div>
+                        <h1 className="text-2xl font-bold text-center mb-2 text-white">RPCM Monitor</h1>
+                        <p className="text-gray-400 text-center mb-8 text-sm">Secure Access Portal</p>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Access Code"
+                                className="w-full bg-plant-bg border border-plant-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent-primary transition-colors placeholder-gray-600"
+                                autoFocus
+                            />
                             <div className="flex items-center">
                                 <input 
                                     id="remember-me" 
                                     type="checkbox" 
                                     checked={remember}
                                     onChange={(e) => setRemember(e.target.checked)}
-                                    className="w-4 h-4 text-plant-green bg-gray-700 border-gray-600 rounded focus:ring-plant-green focus:ring-2 custom-checkbox cursor-pointer" 
+                                    className="w-4 h-4 text-accent-primary bg-gray-700 border-gray-600 rounded focus:ring-accent-primary focus:ring-2 custom-checkbox cursor-pointer" 
                                 />
-                                <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-300 cursor-pointer">Remember me for 30 days</label>
+                                <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-400 cursor-pointer select-none">Keep me logged in (30 days)</label>
                             </div>
-                            {error && <p className="text-status-crit text-sm text-center">Invalid access code</p>}
-                            <button type="submit" className="w-full bg-plant-green hover:bg-opacity-90 text-plant-dark font-bold py-3 rounded-lg transition-all">
-                                Access Dashboard
+                            {error && <p className="text-status-crit text-sm text-center bg-status-crit/10 py-2 rounded">Invalid credential provided</p>}
+                            <button type="submit" className="w-full bg-accent-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-blue-900/20">
+                                Enter Dashboard
                             </button>
                         </form>
                     </div>
-                </div>
-            );
-        };
-
-        const ErrorBoundary = class extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-            static getDerivedStateFromError(error) { return { hasError: true, error }; }
-            render() {
-                if (this.state.hasError) return (
-                    <div className="min-h-screen flex items-center justify-center bg-plant-dark text-status-crit p-8 text-center">
-                        <div>
-                            <h2 className="text-2xl font-bold mb-2">System Error</h2>
-                            <p className="text-gray-400 mb-4">The application encountered a critical error.</p>
-                            <button onClick={() => { try { localStorage.clear(); sessionStorage.clear(); } catch(e){} window.location.reload(); }} className="bg-gray-800 px-4 py-2 rounded border border-gray-700 hover:bg-gray-700 text-white">Reset & Reload</button>
-                        </div>
-                    </div>
-                );
-                return this.props.children;
-            }
-        };
-
-        const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
-            const items = [
-                { id: 'dashboard', icon: 'BarChart3', label: 'Dashboard' },
-                { id: 'logs', icon: 'Activity', label: 'Hourly Logs' },
-                { id: 'settings', icon: 'Settings', label: 'Settings' },
-            ];
-
-            return (
-                <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
-                    <div className="p-6 flex items-center gap-3 border-b border-plant-border">
-                        <div className="w-8 h-8 bg-plant-green rounded flex items-center justify-center text-plant-dark font-bold">R</div>
-                        <span className="font-bold text-xl tracking-tight">RPCM</span>
-                    </div>
-                    <nav className="flex-1 p-4 space-y-2">
-                        {items.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => onTabChange(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                                    activeTab === item.id 
-                                    ? 'bg-plant-green text-plant-dark font-medium shadow-lg shadow-plant-green/20' 
-                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                }`}
-                            >
-                                <Icon name={item.icon} size={20} />
-                                <span>{item.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                    <div className="p-4 border-t border-plant-border">
-                        <button 
-                            onClick={onLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors"
-                        >
-                            <Icon name="LogOut" size={20} />
-                            <span>Logout</span>
-                        </button>
-                        <div className="flex items-center gap-3 px-4 py-2 mt-2">
-                            <div className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></div>
-                            <span className="text-xs text-gray-500">System Online</span>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const BottomNav = ({ activeTab, onTabChange }) => {
-            const items = [
-                { id: 'dashboard', icon: 'BarChart3', label: 'Dash' },
-                { id: 'logs', icon: 'Activity', label: 'Logs' },
-                { id: 'settings', icon: 'Settings', label: 'Setup' },
-            ];
-
-            return (
-                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb">
-                    {items.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
-                                activeTab === item.id 
-                                ? 'text-plant-green' 
-                                : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                            <Icon name={item.icon} size={20} />
-                            <span className="text-xs mt-1">{item.label}</span>
-                        </button>
-                    ))}
                 </div>
             );
         };
@@ -382,166 +263,173 @@
                     const text = await selectedFile.text();
                     const lines = text.split('\n').filter(l => l.trim().length > 0);
                     
-                    const headerRow = parseCSVLine(lines[0]);
-                    // Check if Time is first column (V2) or further right (Original)
-                    let timeColIndex = headerRow.findIndex(h => h && h.trim().toLowerCase() === 'time');
-                    if (timeColIndex === -1) timeColIndex = 5; 
-
-                    let lastLogObj = null;
+                    let isMTDSection = false;
 
                     for (let i = 1; i < lines.length; i++) {
                         const row = parseCSVLine(lines[i]);
                         
-                        // --- 1. Summary Data (Only if space exists on left) ---
-                        if (timeColIndex > 3 && row.length >= 4) {
-                            const paramName = row[0]?.trim();
-                            const unit = row[1]?.trim();
-                            const rawActual = row[2]?.trim().replace(/"/g, '').replace(/,/g, '');
-                            const rawTarget = row[3]?.trim().replace(/"/g, '').replace(/,/g, '');
-
-                            const mapping = PARAM_MAPPING_V1[paramName];
+                        // 1. Process Daily Summary (Left Side)
+                        // Prod_Report.csv layout: Param(0), Tag(1), Unit(2), Target(3), Actual(4)
+                        if (row.length >= 5) {
+                            let paramName = row[0]?.trim();
                             
-                            if (mapping && rawActual) {
-                                const val = parseFloat(rawActual);
-                                let status = 'ok';
-                                if (isNaN(val)) status = 'neutral';
-                                
-                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', mapping.id);
+                            // Detect Section Switches
+                            if (paramName && paramName.includes('MONTH-TO-DATE')) {
+                                isMTDSection = true;
+                                continue;
+                            } else if (paramName && paramName.includes('TODAY PRODUCTION')) {
+                                isMTDSection = false;
+                                continue;
+                            }
+
+                            let mapping = PARAM_MAPPING_PROD[paramName];
+                            let category = 'utility';
+                            let idPrefix = '';
+
+                            if (isMTDSection && mapping) {
+                                category = 'mtd';
+                                idPrefix = 'mtd_';
+                            } else if (mapping) {
+                                category = mapping.cat;
+                            }
+
+                            // CLEANING: Convert "No Good Data" to 0
+                            const clean = (val) => {
+                                if (!val) return '';
+                                if (val.includes('No Good Data') || val.includes('Bad') || val.includes('[-11059]')) return '0';
+                                return val.replace(/"/g, '').replace(/,/g, '');
+                            };
+
+                            const rawTarget = clean(row[3]);
+                            const rawActual = clean(row[4]);
+
+                            if (mapping && (rawActual || rawTarget)) {
+                                const docId = idPrefix + mapping.id;
+                                const docRef = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', docId);
                                 batch.set(docRef, {
-                                    id: mapping.id,
-                                    category: mapping.cat,
+                                    id: docId,
+                                    category: category,
                                     name: paramName,
-                                    value: rawActual, 
-                                    unit: unit,
+                                    unit: row[2]?.trim(),
                                     target: rawTarget,
-                                    status: status
+                                    value: rawActual
                                 });
                                 updatesCount++;
                             }
                         }
 
-                        // --- 2. Hourly Logs ---
-                        if (row.length > timeColIndex) {
-                            const timeVal = row[timeColIndex]?.trim();
-                            if (timeVal && timeVal.includes(':')) {
-                                let [h, m] = timeVal.split(':');
-                                if (h.length === 1) h = '0' + h;
-                                const cleanTime = `${h}:${m}`;
-                                const docId = `log_${h}${m}`;
+                        // 2. Process Hourly Logs (Right Side)
+                        // Time at Col 7. Data starts Col 8.
+                        if (row.length > 7) {
+                            const timeVal = row[7]?.trim();
+                            // Parse "DD/MM/YYYY h AM/PM" or similar
+                            if (timeVal && (timeVal.includes(':') || timeVal.includes('AM') || timeVal.includes('PM'))) {
+                                // Extract Time Part only for ID
+                                let cleanTime = timeVal;
+                                try {
+                                    // Split date and time "26/11/2025 9 PM"
+                                    const parts = timeVal.split(' ');
+                                    if(parts.length >= 2) {
+                                        // It has date and time. Let's try to extract just time for display, or keep full string
+                                        // Actually for sorting, firestore needs consistent ID. 
+                                        // Let's use the row index or just format HHMM if possible. 
+                                        // Given "9 PM", converting to 21:00 is complex without library. 
+                                        // Simplified: Use the string as display time, but ID needs uniqueness.
+                                        // We will use the raw string for display.
+                                        cleanTime = parts.slice(1).join(' '); // "9 PM"
+                                    }
+                                } catch(e) {}
 
-                                const pFloat = (offset) => {
-                                    const idx = timeColIndex + offset;
+                                // For Doc ID, use a sequential index or sanitize the time string
+                                // Ideally, we'd parse to ISO. For now, use sanitized string.
+                                const docId = `log_${timeVal.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+                                const pFloat = (idx) => {
                                     if (idx >= row.length) return 0;
-                                    const val = row[idx]?.trim().replace(/"/g, '').replace(/,/g, '');
-                                    return val ? parseFloat(val) : 0;
+                                    let val = row[idx]?.trim();
+                                    if (!val || val.includes('No Good') || val.includes('Bad') || val.includes('[-11059]')) return 0;
+                                    val = val.replace(/"/g, '').replace(/,/g, '');
+                                    return parseFloat(val) || 0;
                                 };
 
                                 const logObj = {
-                                    time: cleanTime,
-                                    power: pFloat(1),      // Time + 1
-                                    gen: pFloat(2),        // Time + 2
-                                    steam: pFloat(3),      // Time + 3
-                                    px: pFloat(4),         // Time + 4
-                                    bc101a: pFloat(5),     // Time + 5
-                                    bc101b: pFloat(6),     // Time + 6
-                                    steam_dht: pFloat(7),  // Time + 7
-                                    header_44: pFloat(8),  // Time + 8
-                                    adm2_flow: pFloat(10), // Time + 10
-                                    adm1_flow: pFloat(11)  // Time + 11
+                                    time: timeVal, // Store full date-time string
+                                    plant_power: pFloat(8),
+                                    stg_gen: pFloat(9),
+                                    bc101a: pFloat(10),
+                                    bc101b: pFloat(11),
+                                    isbl_mcc: pFloat(12),
+                                    osbl_mcc: pFloat(13),
+                                    md: pFloat(14),
+                                    wwt: pFloat(15),
+                                    pwh: pFloat(16),
+                                    pob: pFloat(17),
+                                    admin: pFloat(18)
                                 };
                                 
                                 const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
                                 batch.set(docRef, logObj);
-                                lastLogObj = logObj;
                                 updatesCount++;
                             }
                         }
                     }
 
-                    // Sync Summary with Latest Log if V2 format
-                    if (lastLogObj && timeColIndex === 0) {
-                        const summaryUpdates = [
-                            { id: 'plant_power', val: lastLogObj.power },
-                            { id: 'power_gen', val: lastLogObj.gen },
-                            { id: 'steam_flex', val: lastLogObj.steam },
-                            { id: 'px_rate', val: lastLogObj.px },
-                            { id: 'bc101a', val: lastLogObj.bc101a },
-                            { id: 'bc101b', val: lastLogObj.bc101b },
-                            { id: 'steam_dht', val: lastLogObj.steam_dht },
-                            { id: 'header_44', val: lastLogObj.header_44 },
-                            { id: 'adm1_flow', val: lastLogObj.adm1_flow },
-                            { id: 'adm2_flow', val: lastLogObj.adm2_flow },
-                        ];
-                        
-                        summaryUpdates.forEach(upd => {
-                            const ref = window.firebaseModules.doc(db, publicDataPath, 'daily_summary', upd.id);
-                            batch.set(ref, { value: upd.val }, { merge: true });
-                        });
-                    }
-
                     await batch.commit();
-                    setStatus(`Success! Processed ${updatesCount} records.`);
+                    setStatus(`Success! Synced ${updatesCount} data points (Bad data -> 0).`);
                     setSelectedFile(null);
                     document.getElementById('file-upload').value = "";
 
                 } catch (err) {
                     console.error(err);
-                    setStatus('Error uploading: ' + err.message);
+                    setStatus('Upload failed: ' + err.message);
                 } finally {
                     setUploading(false);
                 }
             };
 
             return (
-                <div className="p-4 md:p-8 md:ml-64 text-white">
-                    <h1 className="text-2xl font-bold mb-6">Settings</h1>
-                    <div className="glass-panel p-6 rounded-xl max-w-2xl">
-                        <h2 className="text-lg font-semibold mb-4">Manual Data Upload</h2>
-                        <p className="text-gray-400 mb-6 text-sm">
-                            Upload your daily report CSV here. Supports both side-by-side and log-only formats.
-                        </p>
-                        
-                        <div className="space-y-6">
+                <div className="p-6 md:p-10 md:ml-64 text-white">
+                    <h1 className="text-3xl font-bold mb-8">Settings & Data</h1>
+                    <div className="glass-panel p-8 rounded-2xl max-w-3xl">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="p-3 bg-accent-primary/20 rounded-lg text-accent-primary">
+                                <Icon name="Upload" size={24} />
+                            </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Select CSV File</label>
+                                <h2 className="text-xl font-bold">Report Upload</h2>
+                                <p className="text-gray-400 text-sm">Sync dashboard with 'Prod_Report.csv'</p>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-plant-bg/50 p-6 rounded-xl border border-plant-border border-dashed">
+                            <label className="block text-sm font-medium text-gray-300 mb-4">Select CSV File</label>
+                            <div className="flex flex-col sm:flex-row gap-4">
                                 <input 
                                     id="file-upload"
                                     type="file" 
                                     accept=".csv"
                                     onChange={(e) => setSelectedFile(e.target.files[0])}
-                                    className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-plant-green file:text-plant-dark hover:file:bg-opacity-90 cursor-pointer"
+                                    className="flex-1 block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-plant-card file:text-white hover:file:bg-plant-border cursor-pointer"
                                 />
+                                <button 
+                                    onClick={handleUpload} 
+                                    disabled={uploading || !selectedFile}
+                                    className={`px-8 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                                        uploading || !selectedFile
+                                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                        : 'bg-accent-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                                    }`}
+                                >
+                                    {uploading ? 'Syncing...' : 'Upload'}
+                                </button>
                             </div>
-
-                            <button 
-                                onClick={handleUpload} 
-                                disabled={uploading || !selectedFile}
-                                className={`w-full flex justify-center items-center gap-2 px-4 py-3 rounded-lg font-bold transition-all ${
-                                    uploading || !selectedFile
-                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-                                    : 'bg-plant-green text-plant-dark hover:bg-opacity-90'
-                                }`}
-                            >
-                                <Icon name="UploadCloud" size={20} />
-                                {uploading ? 'Processing & Syncing...' : 'Upload & Sync Data'}
-                            </button>
                         </div>
                         
                         {status && (
-                            <div className={`mt-4 p-3 rounded bg-black/20 text-sm ${status.includes('Error') ? 'text-status-crit' : 'text-status-ok'}`}>
+                            <div className={`mt-6 p-4 rounded-lg text-sm font-medium flex items-center gap-2 ${status.includes('Error') || status.includes('failed') ? 'bg-status-crit/10 text-status-crit' : 'bg-status-ok/10 text-status-ok'}`}>
                                 {status}
                             </div>
                         )}
-                        
-                        <div className="mt-8 pt-6 border-t border-gray-700">
-                             <h3 className="text-sm font-semibold text-gray-300 mb-2">Connection Status</h3>
-                             <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${user ? 'bg-status-ok' : 'bg-status-crit'}`}></div>
-                                <span className="text-gray-400 text-sm">
-                                    {user ? `Connected as ${user.isAnonymous ? 'Guest' : user.uid}` : 'Disconnected'}
-                                </span>
-                             </div>
-                        </div>
                     </div>
                 </div>
             );
@@ -554,209 +442,269 @@
             };
             const getTarget = (cat, id) => {
                 const item = dailyData[cat]?.find(x => x.id === id);
-                return item ? item.target : '';
+                return item ? item.target : '-';
+            };
+            const getUnit = (cat, id) => {
+                const item = dailyData[cat]?.find(x => x.id === id);
+                return item ? item.unit : '';
             };
 
             const latestTime = useMemo(() => {
-                if (!hourlyData || hourlyData.length === 0) return "Waiting for data...";
+                if (!hourlyData || hourlyData.length === 0) return "No Data";
+                // Sort by time roughly to find latest (CSV structure usually appended)
+                // Just taking the last entry for now
                 const lastLog = hourlyData[hourlyData.length - 1];
-                
-                // Get current date
-                const now = new Date();
-                const dateStr = now.toLocaleDateString('en-GB', { 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
-                });
-                
-                return `${dateStr}, ${lastLog.time || "00:00"}`;
+                return lastLog.time || "";
             }, [hourlyData]);
 
             return (
-                <div className="p-4 md:p-8 space-y-6 pb-20 md:ml-64">
+                <div className="p-4 md:p-8 space-y-8 pb-24 md:ml-64">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold">Daily Report</h1>
-                            <p className="text-gray-400 text-sm flex items-center gap-2">
-                                <Icon name="Activity" size={14} className="text-plant-green" />
-                                Data as of: {latestTime}
+                            <h1 className="text-3xl font-bold text-white tracking-tight">Production Overview</h1>
+                            <p className="text-gray-400 mt-1 flex items-center gap-2 text-sm">
+                                <span className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></span>
+                                Data synchronized: {latestTime}
                             </p>
                         </div>
-                        <div className="flex gap-2">
-                             <div className="bg-red-900/30 text-red-400 px-3 py-1 rounded-full text-xs font-medium border border-red-900/50 flex items-center gap-2">
-                                <Icon name="AlertTriangle" size={12} />
-                                Low Steam DHT
-                            </div>
-                        </div>
                     </div>
 
-                    {/* KPI Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Production */}
-                        <Card title="Production Overview" className="border-l-4 border-l-plant-green">
-                            {dailyData.production?.map(m => (
-                                <MetricRow key={m.id} label={m.name} value={m.value} unit={m.unit} target={m.target} status={m.status} />
-                            ))}
-                        </Card>
-
-                        {/* Efficiency */}
-                        <Card title="Plant Efficiency" className="border-l-4 border-l-blue-500">
-                            {dailyData.efficiency?.map(m => (
-                                <MetricRow key={m.id} label={m.name} value={m.value} unit={m.unit} target={m.target} status={m.status} />
-                            ))}
-                        </Card>
-
-                        {/* Power */}
-                        <Card title="Power Generation" className="border-l-4 border-l-yellow-500">
-                             {dailyData.power?.map(m => (
-                                <MetricRow key={m.id} label={m.name} value={m.value} unit={m.unit} target={m.target} status={m.status} />
-                            ))}
-                        </Card>
-
-                         {/* Steam/Process */}
-                        <Card title="Steam & Process" className="border-l-4 border-l-purple-500">
-                             {dailyData.steam?.slice(0,2).map(m => (
-                                <MetricRow key={m.id} label={m.name} value={m.value} unit={m.unit} target={m.target} status={m.status} />
-                            ))}
-                             {dailyData.process?.slice(0,2).map(m => (
-                                <MetricRow key={m.id} label={m.name} value={m.value} unit={m.unit} target={m.target} status={m.status} />
-                            ))}
-                        </Card>
+                    {/* 1. Top Row: Key Production KPIs */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <StatCard 
+                            title="CTA Production" 
+                            value={getVal('production', 'cta_prod')} 
+                            unit={getUnit('production', 'cta_prod')}
+                            target={getTarget('production', 'cta_prod')}
+                            icon="Factory" 
+                        />
+                        <StatCard 
+                            title="PTA Production" 
+                            value={getVal('production', 'pta_prod')} 
+                            unit={getUnit('production', 'pta_prod')}
+                            target={getTarget('production', 'pta_prod')}
+                            icon="Factory" 
+                        />
+                        <StatCard 
+                            title="Plant Availability" 
+                            value={getVal('production', 'availability')} 
+                            unit={getUnit('production', 'availability')}
+                            target={getTarget('production', 'availability')}
+                            icon="Activity" 
+                        />
                     </div>
 
-                    {/* Charts Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Main Trend: Power */}
-                        <div className="lg:col-span-2 glass-panel p-6 rounded-xl">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Icon name="Zap" size={20} className="text-yellow-500" />
-                                    Plant Power Trend
-                                </h3>
-                            </div>
-                            <div className="h-72 w-full">
+                    {/* 2. Charts Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Power Balance */}
+                        <div className="glass-panel p-6 rounded-2xl">
+                            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                <Icon name="Zap" className="text-yellow-400" />
+                                Power Generation vs Consumption
+                            </h3>
+                            <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={hourlyData}>
                                         <defs>
-                                            <linearGradient id="colorPower" x1="0" y1="0" x2="0" y2="1">
+                                            <linearGradient id="gradPower" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
                                                 <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
                                             </linearGradient>
+                                            <linearGradient id="gradGen" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                            </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
-                                        <XAxis dataKey="time" stroke="#6e7681" tick={{fontSize: 12}} />
-                                        <YAxis stroke="#6e7681" tick={{fontSize: 12}} domain={[20, 23]} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                        <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} interval={1} />
+                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
                                         <Tooltip 
-                                            contentStyle={{backgroundColor: '#161b22', borderColor: '#30363d', borderRadius: '8px'}}
-                                            itemStyle={{color: '#e6edf3'}}
+                                            contentStyle={{backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px'}}
+                                            itemStyle={{color: '#f1f5f9'}}
                                         />
-                                        <ReferenceLine y={20} stroke="#8cc63f" strokeDasharray="3 3" label={{ position: 'right',  value: 'Target', fill: '#8cc63f', fontSize: 10 }} />
-                                        <Area type="monotone" dataKey="power" stroke="#eab308" strokeWidth={2} fillOpacity={1} fill="url(#colorPower)" name="Power (MW)" />
+                                        <Legend />
+                                        <Area type="monotone" dataKey="plant_power" name="Plant Power (MW)" stroke="#eab308" fill="url(#gradPower)" strokeWidth={2} />
+                                        <Area type="monotone" dataKey="stg_gen" name="STG Gen (MW)" stroke="#3b82f6" fill="url(#gradGen)" strokeWidth={2} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Secondary Trend: PX Rate & Steam */}
-                        <div className="glass-panel p-6 rounded-xl">
-                            <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-                                <Icon name="Activity" size={20} className="text-blue-400" />
-                                Process Rates
+                        {/* Area Power Breakdown */}
+                        <div className="glass-panel p-6 rounded-2xl">
+                            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                <Icon name="LayoutDashboard" className="text-purple-400" />
+                                Area Power Distribution
                             </h3>
-                            <div className="h-72 w-full">
+                            <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={hourlyData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
-                                        <XAxis dataKey="time" stroke="#6e7681" tick={{fontSize: 10}} />
-                                        <YAxis yAxisId="left" stroke="#6e7681" tick={{fontSize: 10}} />
-                                        <YAxis yAxisId="right" orientation="right" stroke="#6e7681" tick={{fontSize: 10}} />
+                                    <BarChart data={hourlyData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                        <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} interval={1} />
+                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
                                         <Tooltip 
-                                            contentStyle={{backgroundColor: '#161b22', borderColor: '#30363d', borderRadius: '8px'}}
+                                            contentStyle={{backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px'}}
+                                            cursor={{fill: 'rgba(255,255,255,0.05)'}}
                                         />
-                                        <Legend verticalAlign="top" height={36}/>
-                                        <Line yAxisId="left" type="monotone" dataKey="px" stroke="#60a5fa" strokeWidth={2} dot={false} name="PX Rate" />
-                                        <Line yAxisId="right" type="monotone" dataKey="steam" stroke="#a855f7" strokeWidth={2} dot={false} name="Steam" />
-                                    </LineChart>
+                                        <Legend />
+                                        <Bar dataKey="isbl_mcc" name="ISBL" stackId="a" fill="#8b5cf6" />
+                                        <Bar dataKey="osbl_mcc" name="OSBL" stackId="a" fill="#ec4899" />
+                                        <Bar dataKey="md" name="MD" stackId="a" fill="#10b981" />
+                                    </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     </div>
 
-                    {/* Detailed Stats Row (Now Wired to Firebase Data) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         <Card title="Utility Health" className="h-full">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 bg-white/5 rounded-lg">
-                                    <div className="text-xs text-gray-400">Total Power Cons.</div>
-                                    <div className="text-xl font-bold text-red-400">{getVal('utility', 'total_power_cons')} <span className="text-xs text-gray-500">kWh/t</span></div>
-                                    <div className="text-xs text-gray-500 mt-1">Target: {getTarget('utility', 'total_power_cons')}</div>
+                    {/* 3. Utilities & Consumption Grid (Today) */}
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <Icon name="Droplets" className="text-cyan-400" />
+                            Daily Usage & Efficiency (Today)
+                        </h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                            {[
+                                { id: 'total_power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400' },
+                                { id: 'hac_consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400' },
+                                { id: 'nat_gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400' },
+                                { id: 'caustic', label: 'Caustic', icon: 'Activity', color: 'text-pink-400' },
+                                { id: 'cmb_cat', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400' },
+                                { id: 'cmb_rec', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400' },
+                            ].map(metric => (
+                                <div key={metric.id} className="bg-plant-bg/50 p-4 rounded-xl border border-plant-border">
+                                    <div className={`text-xs font-medium mb-1 ${metric.color} flex items-center gap-1`}>
+                                        <Icon name={metric.icon} size={12} />
+                                        {metric.label}
+                                    </div>
+                                    <div className="text-xl font-bold text-white mb-1">
+                                        {getVal('utility', metric.id)}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                        Target: <span className="text-gray-300 font-mono">{getTarget('utility', metric.id)}</span>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-white/5 rounded-lg">
-                                    <div className="text-xs text-gray-400">HAC Cons.</div>
-                                    <div className="text-xl font-bold text-yellow-400">{getVal('utility', 'hac_cons')} <span className="text-xs text-gray-500">kg/t</span></div>
-                                    <div className="text-xs text-gray-500 mt-1">Target: {getTarget('utility', 'hac_cons')}</div>
-                                </div>
-                                <div className="p-3 bg-white/5 rounded-lg">
-                                    <div className="text-xs text-gray-400">Excess PX</div>
-                                    <div className="text-xl font-bold text-plant-green">{getVal('utility', 'excess_px')} <span className="text-xs text-gray-500">kg/t</span></div>
-                                    <div className="text-xs text-gray-500 mt-1">Target: {getTarget('utility', 'excess_px')}</div>
-                                </div>
-                                 <div className="p-3 bg-white/5 rounded-lg">
-                                    <div className="text-xs text-gray-400">CMB Catalyst</div>
-                                    <div className="text-xl font-bold text-gray-200">{getVal('utility', 'cmb_catalyst')} <span className="text-xs text-gray-500">kg/t</span></div>
-                                    <div className="text-xs text-gray-500 mt-1">Target: {getTarget('utility', 'cmb_catalyst')}</div>
-                                </div>
-                            </div>
-                         </Card>
+                            ))}
+                        </div>
+                    </div>
 
-                         <Card title="Reactor Status" className="h-full">
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span>Rx A Temp</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded">VO₂ {getVal('reactor', 'rx_a_vo2')}%</span>
-                                            <span className="text-yellow-400">{getVal('reactor', 'rx_a_temp')}°C</span>
-                                        </div>
+                    {/* 4. Month-to-Date Grid */}
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <Icon name="Calendar" className="text-orange-400" />
+                            Month-To-Date Performance
+                        </h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                            {[
+                                { id: 'mtd_total_power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400', key: 'total_power' },
+                                { id: 'mtd_hac_consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400', key: 'hac_consum' },
+                                { id: 'mtd_nat_gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400', key: 'nat_gas' },
+                                { id: 'mtd_caustic', label: 'Caustic', icon: 'Activity', color: 'text-pink-400', key: 'caustic' },
+                                { id: 'mtd_cmb_cat', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400', key: 'cmb_cat' },
+                                { id: 'mtd_cmb_rec', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400', key: 'cmb_rec' },
+                            ].map(metric => (
+                                <div key={metric.id} className="bg-plant-bg/50 p-4 rounded-xl border border-plant-border">
+                                    <div className={`text-xs font-medium mb-1 ${metric.color} flex items-center gap-1`}>
+                                        <Icon name={metric.icon} size={12} />
+                                        {metric.label}
                                     </div>
-                                    <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                                        <div className="bg-yellow-400 h-full" style={{width: '90%'}}></div>
+                                    <div className="text-xl font-bold text-white mb-1">
+                                        {getVal('mtd', metric.key)}
                                     </div>
-                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>Target: {getTarget('reactor', 'rx_a_temp')}</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span>Rx B Temp</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-400 bg-white/10 px-2 py-0.5 rounded">VO₂ {getVal('reactor', 'rx_b_vo2')}%</span>
-                                            <span className="text-red-400">{getVal('reactor', 'rx_b_temp')}°C</span>
-                                        </div>
-                                    </div>
-                                    <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                                        <div className="bg-red-400 h-full" style={{width: '75%'}}></div>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>Target: {getTarget('reactor', 'rx_b_temp')}</span>
+                                    <div className="text-xs text-gray-500">
+                                        Target: <span className="text-gray-300 font-mono">{getTarget('mtd', metric.key)}</span>
                                     </div>
                                 </div>
-                            </div>
-                         </Card>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
         };
 
+        const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
+            const items = [
+                { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
+                { id: 'logs', icon: 'Table2', label: 'Hourly Logs' },
+                { id: 'settings', icon: 'Settings', label: 'Settings' },
+            ];
+
+            return (
+                <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
+                    <div className="p-8 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/20">R</div>
+                        <div>
+                            <h1 className="font-bold text-xl tracking-tight text-white">RPCM</h1>
+                            <div className="text-xs text-gray-500">Production View</div>
+                        </div>
+                    </div>
+                    <nav className="flex-1 px-4 space-y-2 mt-4">
+                        {items.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onTabChange(item.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-medium ${
+                                    activeTab === item.id 
+                                    ? 'bg-accent-primary text-white shadow-lg shadow-blue-900/20' 
+                                    : 'text-gray-400 hover:bg-plant-border/50 hover:text-white'
+                                }`}
+                            >
+                                <Icon name={item.icon} size={20} />
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="p-6">
+                        <button 
+                            onClick={onLogout}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
+                        >
+                            <Icon name="LogOut" size={18} />
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const BottomNav = ({ activeTab, onTabChange }) => {
+            const items = [
+                { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dash' },
+                { id: 'logs', icon: 'Table2', label: 'Logs' },
+                { id: 'settings', icon: 'Settings', label: 'Setup' },
+            ];
+
+            return (
+                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb shadow-2xl">
+                    {items.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => onTabChange(item.id)}
+                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
+                                activeTab === item.id 
+                                ? 'text-accent-primary' 
+                                : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                        >
+                            <Icon name={item.icon} size={22} />
+                            <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
         const App = () => {
+            // 1. Safe Auth Check (Runs only ONCE at startup)
             const [authenticated, setAuthenticated] = useState(() => {
                 try {
+                    // Check Persistent Storage
                     const stored = localStorage.getItem('rpcm_auth_data');
                     if (stored) {
                         const { timestamp } = JSON.parse(stored);
                         if (Date.now() - timestamp < 2592000000) return true;
                     }
+                    // Check Session Storage
                     return !!sessionStorage.getItem('rpcm_authenticated');
                 } catch (e) {
                     console.warn("Auth storage unavailable", e);
@@ -768,9 +716,11 @@
             const [user, setUser] = useState(null);
             const [firebaseReady, setFirebaseReady] = useState(false);
             
+            // Data State
             const [dailyData, setDailyData] = useState(initialDailySummary);
             const [hourlyData, setHourlyData] = useState(initialHourlyData);
 
+            // Wait for Firebase Modules
             useEffect(() => {
                 const checkFirebase = () => {
                     if (window.firebaseModules) {
@@ -782,6 +732,7 @@
                 return () => window.removeEventListener('firebase-ready', checkFirebase);
             }, []);
 
+            // Auth & Init
             useEffect(() => {
                 if (!firebaseReady) return;
 
@@ -811,6 +762,7 @@
                 }
             }, [firebaseReady]);
 
+            // Data Fetching
             useEffect(() => {
                 if (!user || !firebaseReady) return;
                 
@@ -823,22 +775,16 @@
                 const unsubSummary = onSnapshot(summaryQuery, (snapshot) => {
                     if (snapshot.empty) return; 
                     
-                    const categoryMap = { production: [], efficiency: [], power: [], steam: [], process: [], utility: [], reactor: [] };
+                    const map = { production: [], utility: [], mtd: [] };
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        if (categoryMap[data.category]) {
-                            categoryMap[data.category].push(data);
+                        if (map[data.category]) {
+                            map[data.category].push(data);
                         }
                     });
                     
-                    const newSummary = { ...initialDailySummary };
-                    Object.keys(categoryMap).forEach(cat => {
-                        if (categoryMap[cat].length > 0) {
-                            newSummary[cat] = categoryMap[cat];
-                        }
-                    });
-                    setDailyData(newSummary);
+                    setDailyData(prev => ({...prev, ...map}));
                 }, (err) => console.error("Summary sync error:", err));
 
                 const logsQuery = query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time'));
@@ -881,58 +827,66 @@
             const dbInstance = firebaseReady && window.firebaseModules ? window.firebaseModules.getFirestore() : null;
             
             return (
-                <div className="min-h-screen bg-plant-dark">
+                <div className="min-h-screen bg-plant-bg text-slate-200 selection:bg-accent-primary selection:text-white">
                     <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
-                    
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
                     
                     {activeTab === 'dashboard' && <Dashboard dailyData={dailyData} hourlyData={hourlyData} />}
                     {activeTab === 'logs' && (
-                            <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
-                            <h2 className="text-xl mb-4">Hourly Logs View</h2>
+                        <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
+                            <h2 className="text-2xl font-bold text-white mb-6">Hourly Log Data</h2>
                             <div className="glass-panel p-4 rounded-xl overflow-x-auto">
                                 <table className="w-full text-sm text-left whitespace-nowrap">
-                                    <thead className="text-xs text-gray-400 uppercase bg-gray-700/50">
+                                    <thead className="text-xs text-gray-400 uppercase bg-plant-border/50">
                                         <tr>
-                                            <th className="px-6 py-3">Time</th>
-                                            <th className="px-6 py-3">Power</th>
-                                            <th className="px-6 py-3">Gen</th>
-                                            <th className="px-6 py-3">Steam</th>
-                                            <th className="px-6 py-3">PX Rate</th>
+                                            <th className="px-6 py-4 rounded-tl-lg">Time</th>
+                                            <th className="px-6 py-4">Plant Power</th>
+                                            <th className="px-6 py-4">STG Gen</th>
+                                            <th className="px-6 py-4">ISBL</th>
+                                            <th className="px-6 py-4">OSBL</th>
+                                            <th className="px-6 py-4">MD</th>
+                                            <th className="px-6 py-4 rounded-tr-lg">WWT</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-plant-border">
                                         {hourlyData.map((row, i) => (
-                                            <tr key={i} className="border-b border-gray-700 hover:bg-gray-800">
-                                                <td className="px-6 py-4 font-mono">{row.time}</td>
-                                                <td className="px-6 py-4">{row.power}</td>
-                                                <td className="px-6 py-4">{row.gen}</td>
-                                                <td className="px-6 py-4">{row.steam}</td>
-                                                <td className="px-6 py-4">{row.px}</td>
+                                            <tr key={i} className="hover:bg-white/5 transition-colors">
+                                                <td className="px-6 py-4 font-mono text-accent-primary">{row.time}</td>
+                                                <td className="px-6 py-4">{row.plant_power}</td>
+                                                <td className="px-6 py-4">{row.stg_gen}</td>
+                                                <td className="px-6 py-4">{row.isbl_mcc}</td>
+                                                <td className="px-6 py-4">{row.osbl_mcc}</td>
+                                                <td className="px-6 py-4">{row.md}</td>
+                                                <td className="px-6 py-4">{row.wwt}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                            </div>
+                        </div>
                     )}
-                    {activeTab === 'settings' && (
-                        <Settings 
-                            user={user} 
-                            db={dbInstance} 
-                            appId={getAppId()} 
-                        />
-                    )}
+                    {activeTab === 'settings' && <Settings user={user} db={dbInstance} appId={getAppId()} />}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
-        );
+        class SafeRoot extends React.Component {
+            state = { hasError: false };
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            render() {
+                if (this.state.hasError) return (
+                    <div className="min-h-screen bg-plant-bg flex items-center justify-center text-center p-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-status-crit mb-2">Critical Error</h2>
+                            <button onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }} className="bg-plant-border px-6 py-2 rounded-lg hover:bg-white/10 transition">Reset App</button>
+                        </div>
+                    </div>
+                );
+                return this.props.children;
+            }
+        }
+        root.render(<SafeRoot><App /></SafeRoot>);
     </script>
 </body>
 </html>
