@@ -98,7 +98,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
         const { 
             LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
             Tooltip, ResponsiveContainer, ReferenceLine, Legend, ComposedChart
@@ -324,24 +324,7 @@
                             const timeVal = row[7]?.trim();
                             // Parse "DD/MM/YYYY h AM/PM" or similar
                             if (timeVal && (timeVal.includes(':') || timeVal.includes('AM') || timeVal.includes('PM'))) {
-                                // Extract Time Part only for ID
-                                let cleanTime = timeVal;
-                                try {
-                                    // Split date and time "26/11/2025 9 PM"
-                                    const parts = timeVal.split(' ');
-                                    if(parts.length >= 2) {
-                                        // It has date and time. Let's try to extract just time for display, or keep full string
-                                        // Actually for sorting, firestore needs consistent ID. 
-                                        // Let's use the row index or just format HHMM if possible. 
-                                        // Given "9 PM", converting to 21:00 is complex without library. 
-                                        // Simplified: Use the string as display time, but ID needs uniqueness.
-                                        // We will use the raw string for display.
-                                        cleanTime = parts.slice(1).join(' '); // "9 PM"
-                                    }
-                                } catch(e) {}
-
                                 // For Doc ID, use a sequential index or sanitize the time string
-                                // Ideally, we'd parse to ISO. For now, use sanitized string.
                                 const docId = `log_${timeVal.replace(/[^a-zA-Z0-9]/g, '')}`;
 
                                 const pFloat = (idx) => {
@@ -353,18 +336,10 @@
                                 };
 
                                 const logObj = {
-                                    time: timeVal, // Store full date-time string
+                                    time: timeVal, 
                                     plant_power: pFloat(8),
-                                    stg_gen: pFloat(9),
-                                    bc101a: pFloat(10),
-                                    bc101b: pFloat(11),
-                                    isbl_mcc: pFloat(12),
-                                    osbl_mcc: pFloat(13),
-                                    md: pFloat(14),
-                                    wwt: pFloat(15),
-                                    pwh: pFloat(16),
-                                    pob: pFloat(17),
-                                    admin: pFloat(18)
+                                    stg_gen: pFloat(9)
+                                    // Removed Area Distribution fields as requested (ISBL, OSBL, etc.)
                                 };
                                 
                                 const docRef = window.firebaseModules.doc(db, publicDataPath, 'hourly_logs', docId);
@@ -375,7 +350,7 @@
                     }
 
                     await batch.commit();
-                    setStatus(`Success! Synced ${updatesCount} data points (Bad data -> 0).`);
+                    setStatus(`Success! Synced ${updatesCount} data points.`);
                     setSelectedFile(null);
                     document.getElementById('file-upload').value = "";
 
@@ -451,8 +426,7 @@
 
             const latestTime = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return "No Data";
-                // Sort by time roughly to find latest (CSV structure usually appended)
-                // Just taking the last entry for now
+                // Taking last entry; CSV parsing should ideally add sequence or proper date
                 const lastLog = hourlyData[hourlyData.length - 1];
                 return lastLog.time || "";
             }, [hourlyData]);
@@ -495,65 +469,37 @@
                         />
                     </div>
 
-                    {/* 2. Charts Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Power Balance */}
-                        <div className="glass-panel p-6 rounded-2xl">
-                            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                                <Icon name="Zap" className="text-yellow-400" />
-                                Power Generation vs Consumption
-                            </h3>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={hourlyData}>
-                                        <defs>
-                                            <linearGradient id="gradPower" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="gradGen" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                        <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} interval={1} />
-                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                                        <Tooltip 
-                                            contentStyle={{backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px'}}
-                                            itemStyle={{color: '#f1f5f9'}}
-                                        />
-                                        <Legend />
-                                        <Area type="monotone" dataKey="plant_power" name="Plant Power (MW)" stroke="#eab308" fill="url(#gradPower)" strokeWidth={2} />
-                                        <Area type="monotone" dataKey="stg_gen" name="STG Gen (MW)" stroke="#3b82f6" fill="url(#gradGen)" strokeWidth={2} />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Area Power Breakdown */}
-                        <div className="glass-panel p-6 rounded-2xl">
-                            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                                <Icon name="LayoutDashboard" className="text-purple-400" />
-                                Area Power Distribution
-                            </h3>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={hourlyData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                        <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} interval={1} />
-                                        <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                                        <Tooltip 
-                                            contentStyle={{backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px'}}
-                                            cursor={{fill: 'rgba(255,255,255,0.05)'}}
-                                        />
-                                        <Legend />
-                                        <Bar dataKey="isbl_mcc" name="ISBL" stackId="a" fill="#8b5cf6" />
-                                        <Bar dataKey="osbl_mcc" name="OSBL" stackId="a" fill="#ec4899" />
-                                        <Bar dataKey="md" name="MD" stackId="a" fill="#10b981" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
+                    {/* 2. Charts Row (Expanded) */}
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                            <Icon name="Zap" className="text-yellow-400" />
+                            Power Generation vs Consumption
+                        </h3>
+                        <div className="h-96">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={hourlyData}>
+                                    <defs>
+                                        <linearGradient id="gradPower" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="gradGen" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="time" stroke="#94a3b8" fontSize={10} tickLine={false} interval={2} />
+                                    <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                                    <Tooltip 
+                                        contentStyle={{backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px'}}
+                                        itemStyle={{color: '#f1f5f9'}}
+                                    />
+                                    <Legend />
+                                    <Area type="monotone" dataKey="plant_power" name="Plant Power (MW)" stroke="#eab308" fill="url(#gradPower)" strokeWidth={2} />
+                                    <Area type="monotone" dataKey="stg_gen" name="STG Gen (MW)" stroke="#3b82f6" fill="url(#gradGen)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
 
@@ -694,22 +640,18 @@
             );
         };
 
+        // Main App Component
         const App = () => {
-            // 1. Safe Auth Check (Runs only ONCE at startup)
+            // Safe Auth Logic
             const [authenticated, setAuthenticated] = useState(() => {
                 try {
-                    // Check Persistent Storage
                     const stored = localStorage.getItem('rpcm_auth_data');
                     if (stored) {
                         const { timestamp } = JSON.parse(stored);
                         if (Date.now() - timestamp < 2592000000) return true;
                     }
-                    // Check Session Storage
                     return !!sessionStorage.getItem('rpcm_authenticated');
-                } catch (e) {
-                    console.warn("Auth storage unavailable", e);
-                    return false;
-                }
+                } catch { return false; }
             });
             
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -720,109 +662,72 @@
             const [dailyData, setDailyData] = useState(initialDailySummary);
             const [hourlyData, setHourlyData] = useState(initialHourlyData);
 
-            // Wait for Firebase Modules
             useEffect(() => {
-                const checkFirebase = () => {
-                    if (window.firebaseModules) {
-                        setFirebaseReady(true);
-                    }
-                };
+                const checkFirebase = () => { if (window.firebaseModules) setFirebaseReady(true); };
                 window.addEventListener('firebase-ready', checkFirebase);
                 checkFirebase();
                 return () => window.removeEventListener('firebase-ready', checkFirebase);
             }, []);
 
-            // Auth & Init
             useEffect(() => {
                 if (!firebaseReady) return;
-
                 const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
-                
                 try {
                     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
                     const auth = getAuth(app);
-                    
                     const initAuth = async () => {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            try {
-                                await signInWithCustomToken(auth, __initial_auth_token);
-                                return; 
-                            } catch (error) {
-                                console.warn("Custom token failed. Falling back to Anonymous Auth.", error);
-                            }
+                            try { await signInWithCustomToken(auth, __initial_auth_token); return; } 
+                            catch (e) { console.warn("Token failed, fallback anon"); }
                         }
                         await signInAnonymously(auth);
                     };
                     initAuth();
-
-                    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
-                    return () => unsubscribe();
-                } catch (e) {
-                    console.error("Firebase init error:", e);
-                }
+                    return onAuthStateChanged(auth, (u) => setUser(u));
+                } catch (e) { console.error("Auth Error", e); }
             }, [firebaseReady]);
 
-            // Data Fetching
             useEffect(() => {
                 if (!user || !firebaseReady) return;
-                
                 const { getFirestore, collection, onSnapshot, query, orderBy } = window.firebaseModules;
                 const db = getFirestore();
                 const appId = getAppId();
                 const publicDataPath = `artifacts/${appId}/public/data`;
 
-                const summaryQuery = query(collection(db, publicDataPath, 'daily_summary'));
-                const unsubSummary = onSnapshot(summaryQuery, (snapshot) => {
-                    if (snapshot.empty) return; 
-                    
+                const unsubSummary = onSnapshot(query(collection(db, publicDataPath, 'daily_summary')), (snap) => {
+                    if (snap.empty) return;
                     const map = { production: [], utility: [], mtd: [] };
-                    
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (map[data.category]) {
-                            map[data.category].push(data);
-                        }
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        if (map[d.category]) map[d.category].push(d);
                     });
-                    
                     setDailyData(prev => ({...prev, ...map}));
-                }, (err) => console.error("Summary sync error:", err));
+                });
 
-                const logsQuery = query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time'));
-                const unsubLogs = onSnapshot(logsQuery, (snapshot) => {
-                    if (snapshot.empty) return;
+                const unsubLogs = onSnapshot(query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time')), (snap) => {
+                    if (snap.empty) return;
                     const logs = [];
-                    snapshot.forEach(doc => logs.push(doc.data()));
+                    snap.forEach(doc => logs.push(doc.data()));
                     setHourlyData(logs);
-                }, (err) => console.error("Logs sync error:", err));
+                });
 
-                return () => {
-                    unsubSummary();
-                    unsubLogs();
-                };
+                return () => { unsubSummary(); unsubLogs(); };
             }, [user, firebaseReady]);
             
             const handleLogout = () => {
-                try {
-                    localStorage.removeItem('rpcm_auth_data');
-                    sessionStorage.removeItem('rpcm_authenticated');
-                } catch (e) { console.warn("Storage clear error", e); }
+                try { localStorage.removeItem('rpcm_auth_data'); sessionStorage.removeItem('rpcm_authenticated'); } catch(e){}
                 setAuthenticated(false);
             };
             
             const handleLogin = (remember) => {
                 try {
-                    if (remember) {
-                        localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
-                    } else {
-                        sessionStorage.setItem('rpcm_authenticated', 'true');
-                    }
-                } catch (e) { console.warn("Storage write error", e); }
+                    if (remember) localStorage.setItem('rpcm_auth_data', JSON.stringify({ timestamp: Date.now() }));
+                    else sessionStorage.setItem('rpcm_authenticated', 'true');
+                } catch(e){}
                 setAuthenticated(true);
             }
 
-            if (!authenticated) {
-                return <PasswordGate onLogin={handleLogin} />;
-            }
+            if (!authenticated) return <PasswordGate onLogin={handleLogin} />;
             
             const dbInstance = firebaseReady && window.firebaseModules ? window.firebaseModules.getFirestore() : null;
             
@@ -841,11 +746,7 @@
                                         <tr>
                                             <th className="px-6 py-4 rounded-tl-lg">Time</th>
                                             <th className="px-6 py-4">Plant Power</th>
-                                            <th className="px-6 py-4">STG Gen</th>
-                                            <th className="px-6 py-4">ISBL</th>
-                                            <th className="px-6 py-4">OSBL</th>
-                                            <th className="px-6 py-4">MD</th>
-                                            <th className="px-6 py-4 rounded-tr-lg">WWT</th>
+                                            <th className="px-6 py-4 rounded-tr-lg">STG Gen</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-plant-border">
@@ -854,10 +755,6 @@
                                                 <td className="px-6 py-4 font-mono text-accent-primary">{row.time}</td>
                                                 <td className="px-6 py-4">{row.plant_power}</td>
                                                 <td className="px-6 py-4">{row.stg_gen}</td>
-                                                <td className="px-6 py-4">{row.isbl_mcc}</td>
-                                                <td className="px-6 py-4">{row.osbl_mcc}</td>
-                                                <td className="px-6 py-4">{row.md}</td>
-                                                <td className="px-6 py-4">{row.wwt}</td>
                                             </tr>
                                         ))}
                                     </tbody>
