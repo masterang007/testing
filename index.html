@@ -44,10 +44,10 @@
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         window.firebaseModules = { 
             initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged,
-            getFirestore, collection, onSnapshot, query, orderBy, where
+            getFirestore, collection, onSnapshot, query, orderBy
         };
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
@@ -1018,44 +1018,6 @@
                 checkFirebase();
                 return () => window.removeEventListener('firebase-ready', checkFirebase);
             }, []);
-            
-            useEffect(() => {
-                let authTimeout;
-                
-                if (!firebaseReady) return;
-                
-                const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged } = window.firebaseModules;
-                try {
-                    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-                    const auth = getAuth(app);
-                    
-                    // Sign in anonymously
-                    signInAnonymously(auth).catch(console.error);
-                    
-                    const unsubscribe = onAuthStateChanged(auth, (u) => {
-                        setUser(u);
-                        
-                        // If authenticated but no user, try again after delay
-                        if (!u) {
-                            authTimeout = setTimeout(() => {
-                                signInAnonymously(auth).catch(console.error);
-                            }, 5000);
-                        }
-                    });
-                    
-                    return () => {
-                        unsubscribe();
-                        if (authTimeout) clearTimeout(authTimeout);
-                    };
-                } catch (e) { 
-                    console.error("Auth Error", e); 
-                    // Retry after delay
-                    authTimeout = setTimeout(() => {
-                        window.location.reload();
-                    }, 10000);
-                    return () => clearTimeout(authTimeout);
-                }
-            }, [firebaseReady]);
             
             useEffect(() => {
                 if (!user || !firebaseReady || !authenticated) {
