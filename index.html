@@ -39,12 +39,12 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Recharts -->
-    <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
     <!-- Firebase SDKs (Modular) -->
     <script type="module">
-        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         window.firebaseModules = { 
             initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged,
             getFirestore, collection, doc, onSnapshot, query, orderBy
@@ -116,6 +116,29 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
+        .debug-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid #10b981;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        .error-info {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        .timestamp-format {
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            color: #8b5cf6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +176,10 @@
                 Calendar: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
                 AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="1"/></svg>,
                 RefreshCw: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+                Clock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+                Download: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+                Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+                EyeOff: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             };
             return icons[name] || icons.Activity;
         };
@@ -187,7 +214,7 @@
                     
                     // Create a date object with today's date but the specified time
                     const now = new Date();
-                    const date = new Date(now.getFullYear(), parseInt(month)-1, parseInt(day), hour, 0, 0);
+                    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0);
                     
                     // Format as HH:mm
                     return date.toLocaleTimeString('en-US', { 
@@ -357,6 +384,65 @@
             );
         };
         
+        const Settings = ({ user, db }) => {
+            return (
+                <div className="p-4 md:p-6 md:ml-64 text-white min-h-screen">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-6">Data Structure Information</h1>
+                    
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="p-2 bg-accent-primary/20 rounded-lg text-accent-primary">
+                                <Icon name="AlertTriangle" size={24} />
+                            </div>
+                            <h2 className="text-xl font-bold">Current Data Structure</h2>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
+                                <h3 className="font-semibold mb-2">Firestore Path</h3>
+                                <p className="text-sm text-gray-300">
+                                    This dashboard reads from the following Firestore path:
+                                </p>
+                                <div className="mt-2 p-3 bg-gray-900 rounded font-mono text-xs">
+                                    <code>RP_Daily_Report/Daily_Snapshot</code>
+                                    <div className="mt-1 text-xs text-gray-400">(with subcollection: <code>RP_Hourly_Trends</code>)</div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
+                                <h3 className="font-semibold mb-2">Timestamp Format</h3>
+                                <p className="text-sm text-gray-300 mb-2">
+                                    Hourly data uses the following timestamp format:
+                                </p>
+                                <div className="timestamp-format inline-block mb-2">DD/MM/YYYY h AM/PM</div>
+                                <p className="text-xs text-gray-400">Example: <span className="timestamp-format">28/11/2025 10 AM</span></p>
+                            </div>
+                            
+                            <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
+                                <h3 className="font-semibold mb-2">Data Rounding Rules</h3>
+                                <ul className="list-disc list-inside text-sm text-gray-400 space-y-1">
+                                    <li>Production values are rounded to <strong>0 decimals</strong></li>
+                                    <li>Availability values are rounded to <strong>2 decimals</strong></li>
+                                    <li>Power values are rounded to <strong>2 decimals</strong></li>
+                                </ul>
+                            </div>
+                            
+                            <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
+                                <h3 className="font-semibold mb-2">Manual Refresh</h3>
+                                <p className="text-sm text-gray-300 mb-3">
+                                    If data is not updating, click the refresh button on the dashboard to force a reload.
+                                </p>
+                                <button className="px-4 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition">
+                                    <Icon name="RefreshCw" size={16} className="inline mr-1" />
+                                    Refresh Dashboard Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
         const Dashboard = ({ dailyData, hourlyData, isLoading, onRefresh, loadError }) => {
             const [chartHours, setChartHours] = useState(12);
             
@@ -398,12 +484,9 @@
                     .sort((a, b) => {
                         try {
                             // Try to sort by the original timestamp
-                            if (a.original_time.includes('/') && (a.original_time.includes('AM') || a.original_time.includes('PM'))) {
-                                const dateA = new Date(a.original_time.replace(' AM', '').replace(' PM', ''));
-                                const dateB = new Date(b.original_time.replace(' AM', '').replace(' PM', ''));
-                                return dateB - dateA; // Most recent first
-                            }
-                            return parseTime(a.original_time).localeCompare(parseTime(b.original_time));
+                            const dateA = new Date(a.original_time.replace(' AM', '').replace(' PM', ''));
+                            const dateB = new Date(b.original_time.replace(' AM', '').replace(' PM', ''));
+                            return dateB - dateA; // Most recent first
                         } catch (e) {
                             // Fallback to string comparison
                             return a.time.localeCompare(b.time);
@@ -421,12 +504,9 @@
                     .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
                     .sort((a, b) => {
                         try {
-                            if (a.Timestamp.includes('/') && (a.Timestamp.includes('AM') || a.Timestamp.includes('PM'))) {
-                                const dateA = new Date(a.Timestamp.replace(' AM', '').replace(' PM', ''));
-                                const dateB = new Date(b.Timestamp.replace(' AM', '').replace(' PM', ''));
-                                return dateB - dateA;
-                            }
-                            return b.Timestamp.localeCompare(a.Timestamp);
+                            const dateA = new Date(a.Timestamp.replace(' AM', '').replace(' PM', ''));
+                            const dateB = new Date(b.Timestamp.replace(' AM', '').replace(' PM', ''));
+                            return dateB - dateA;
                         } catch (e) {
                             return b.Timestamp.localeCompare(a.Timestamp);
                         }
@@ -778,12 +858,9 @@
                     .sort((a, b) => {
                         try {
                             // Parse the timestamp for proper sorting
-                            if (a.Timestamp.includes('/') && (a.Timestamp.includes('AM') || a.Timestamp.includes('PM'))) {
-                                const dateA = new Date(a.Timestamp.replace(' AM', '').replace(' PM', ''));
-                                const dateB = new Date(b.Timestamp.replace(' AM', '').replace(' PM', ''));
-                                return dateB - dateA; // Most recent first
-                            }
-                            return b.Timestamp.localeCompare(a.Timestamp);
+                            const dateA = new Date(a.Timestamp.replace(' AM', '').replace(' PM', ''));
+                            const dateB = new Date(b.Timestamp.replace(' AM', '').replace(' PM', ''));
+                            return dateB - dateA; // Most recent first
                         } catch (e) {
                             // Fallback to string comparison if parsing fails
                             return b.Timestamp.localeCompare(a.Timestamp);
@@ -904,6 +981,14 @@
                                 </tbody>
                             </table>
                         </div>
+                        
+                        {sortedLogs.length > 0 && (
+                            <div className="p-3 border-t border-plant-border bg-plant-bg/30 text-xs text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-2">
+                                <div>
+                                    Showing {sortedLogs.length} of {sortedLogs.length} entries
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -1148,38 +1233,7 @@
                         />
                     )}
                     
-                    {activeTab === 'settings' && (
-                        <div className="p-4 md:p-6 md:ml-64 text-white min-h-screen">
-                            <h1 className="text-2xl md:text-3xl font-bold mb-6">System Information</h1>
-                            <div className="glass-panel p-6 rounded-2xl">
-                                <h2 className="text-xl font-bold mb-4">Firestore Data Structure</h2>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-plant-bg/50 rounded-lg">
-                                        <h3 className="font-medium mb-2">Current Document Path</h3>
-                                        <p className="text-sm text-gray-300">RP_Daily_Report/Daily_Snapshot</p>
-                                        <p className="text-xs text-gray-400 mt-1">Subcollection: RP_Hourly_Trends</p>
-                                    </div>
-                                    <div className="p-4 bg-plant-bg/50 rounded-lg">
-                                        <h3 className="font-medium mb-2">Data Flow</h3>
-                                        <ol className="list-decimal list-inside text-sm text-gray-300 space-y-1">
-                                            <li>PI Datalink exports data to <code>RP_Prod_Report.xlsx</code></li>
-                                            <li>Python script processes and uploads to Firestore</li>
-                                            <li>Dashboard fetches data from the correct Firestore path</li>
-                                        </ol>
-                                    </div>
-                                    <div className="p-4 bg-plant-bg/50 rounded-lg">
-                                        <h3 className="font-medium mb-2">Troubleshooting</h3>
-                                        <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                                            <li>Ensure Python script is running successfully</li>
-                                            <li>Check Firebase console for document existence</li>
-                                            <li>Verify service account permissions</li>
-                                            <li>Use browser dev tools to check for errors</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'settings' && <Settings user={user} db={null} />}
                 </div>
             );
         };
