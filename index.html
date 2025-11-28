@@ -169,7 +169,7 @@
         };
         
         const parseTime = (timeStr) => {
-            if (!timeStr) return "No time data";
+            if (!timeStr) return "00:00";
             
             // Handle timestamp format: "DD/MM/YYYY h AM/PM"
             if (timeStr.includes('/') && (timeStr.includes('AM') || timeStr.includes('PM'))) {
@@ -180,27 +180,23 @@
                     // Parse date part
                     const [day, month, year] = datePart.split('/');
                     
-                    // Parse time part 
+                    // Parse time part (already cleaned of leading zeros)
                     let hour = parseInt(timePart);
                     if (ampmPart === 'PM' && hour < 12) hour += 12;
                     if (ampmPart === 'AM' && hour === 12) hour = 0;
                     
-                    // Create a date object
-                    const date = new Date(`${month}/${day}/${year} ${hour}:19:00`);
+                    // Create a date object with today's date but the specified time
+                    const now = new Date();
+                    const date = new Date(now.getFullYear(), parseInt(month)-1, parseInt(day), hour, 0, 0);
                     
-                    // Format as "Nov 28, 09:10 PM"
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const monthAbbr = monthNames[date.getMonth()];
-                    const dayNum = date.getDate();
-                    const timeStr = date.toLocaleTimeString('en-US', { 
+                    // Format as HH:mm
+                    return date.toLocaleTimeString('en-US', { 
                         hour: '2-digit', 
                         minute: '2-digit',
                         hour12: true 
                     });
-                    
-                    return `${monthAbbr} ${dayNum}, ${timeStr}`;
                 } catch (e) {
-                    console.error("Error parsing timestamp:", e);
+                    // Fallback to other formats
                 }
             }
             
@@ -209,41 +205,35 @@
                 try {
                     const date = new Date(timeStr);
                     if (!isNaN(date.getTime())) {
-                        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        const monthAbbr = monthNames[date.getMonth()];
-                        const dayNum = date.getDate();
-                        const timeStr = date.toLocaleTimeString('en-US', { 
+                        return date.toLocaleTimeString('en-US', { 
                             hour: '2-digit', 
                             minute: '2-digit',
                             hour12: true 
                         });
-                        
-                        return `${monthAbbr} ${dayNum}, ${timeStr}`;
                     }
                 } catch (e) {
-                    console.error("Error parsing datetime:", e);
+                    // Fallback to other formats
                 }
             }
             
-            // Fallback formatting
+            // Handle time strings with AM/PM
             if (timeStr.includes('AM') || timeStr.includes('PM')) {
-                // Extract time part for fallback
-                const timeMatch = timeStr.match(/(\d{1,2}:\d{2})\s*(AM|PM)/i);
-                if (timeMatch) {
-                    const today = new Date();
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const monthAbbr = monthNames[today.getMonth()];
-                    const dayNum = today.getDate();
-                    return `${monthAbbr} ${dayNum}, ${timeMatch[1]} ${timeMatch[2]}`;
+                return timeStr.replace(/(\d+:\d+)(:\d+)?\s*(AM|PM)/i, '$1 $3');
+            }
+            
+            // Handle 24-hour format
+            if (timeStr.includes(':')) {
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                    const hour = parseInt(parts[0]);
+                    const minute = parseInt(parts[1]);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour % 12 || 12;
+                    return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
                 }
             }
             
-            // Final fallback: use today's date with the time string
-            const now = new Date();
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const monthAbbr = monthNames[now.getMonth()];
-            const dayNum = now.getDate();
-            return `${monthAbbr} ${dayNum}, ${timeStr}`;
+            return timeStr;
         };
         
         // --- Components ---
@@ -507,7 +497,7 @@
                             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Production Overview</h1>
                             <p className="text-gray-400 mt-1 flex items-center gap-2 text-sm">
                                 <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-gray-500 animate-pulse' : 'bg-status-ok animate-pulse'}`}></span>
-                                {isLoading ? 'Loading latest data...' : `Last update: ${latestTime}`}
+                                {isLoading ? 'Loading latest data...' : `Data updated: ${latestTime}`}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -523,6 +513,13 @@
                                 <Icon name="RefreshCw" size={14} className={isLoading ? "animate-spin" : ""} />
                                 Refresh
                             </button>
+                            {!isLoading && (
+                                <div className="bg-plant-card px-3 py-1.5 rounded-lg text-sm border border-plant-border flex items-center gap-2">
+                                    <div className="time-badge">{chartHours}h</div>
+                                    <span className="text-gray-400 mr-1">CTA:</span>
+                                    <span className="font-mono">{getVal('CTA Production')} {getUnit('CTA Production')}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     
@@ -1006,6 +1003,7 @@
                 
                 try {
                     // Set up subscription for daily data
+                    // This is now a single document with nested fields
                     console.log("Subscribing to RP_Daily_Report/Daily_Snapshot document");
                     const dailyDocRef = doc(db, "RP_Daily_Report", "Daily_Snapshot");
                     
@@ -1048,6 +1046,7 @@
                     );
                     
                     // Set up subscription for hourly trends
+                    // This is now a subcollection of the Daily_Snapshot document
                     console.log("Subscribing to RP_Daily_Report/Daily_Snapshot/RP_Hourly_Trends collection");
                     const hourlyCollectionRef = collection(dailyDocRef, "RP_Hourly_Trends");
                     
