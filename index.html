@@ -325,14 +325,12 @@
                     </div>
                     <div className="md:hidden space-y-3">
                         {sortedLogs.map((row, i) => {
-                            const net = (row.Plant_Power || 0) - (row.STG_Power || 0);
                             return (
                                 <div key={i} className="glass-panel p-4 rounded-xl flex justify-between items-center">
                                     <div className="flex items-center gap-3">
                                         <div className="w-1 h-10 rounded-full bg-accent-primary"></div>
                                         <div>
                                             <div className="font-mono text-white text-sm font-medium">{row.timeStr}</div>
-                                            <div className="text-xs text-gray-400">Net: <span className={net > 0 ? "text-yellow-400" : "text-status-ok"}>{formatNumber(net)}</span></div>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -350,18 +348,15 @@
                                     <th className="px-6 py-3 text-left">Date & Time</th>
                                     <th className="px-6 py-3 text-right">Plant Power</th>
                                     <th className="px-6 py-3 text-right">STG Gen</th>
-                                    <th className="px-6 py-3 text-right">Net</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-plant-border">
                                 {sortedLogs.map((row, i) => {
-                                     const net = (row.Plant_Power || 0) - (row.STG_Power || 0);
                                      return (
                                         <tr key={i} className="hover:bg-white/5">
                                             <td className="px-6 py-3 font-mono text-accent-primary">{row.timeStr}</td>
                                             <td className="px-6 py-3 text-right font-medium">{formatNumber(row.Plant_Power)}</td>
                                             <td className="px-6 py-3 text-right text-blue-400">{formatNumber(row.STG_Power)}</td>
-                                            <td className="px-6 py-3 text-right">{formatNumber(net)}</td>
                                         </tr>
                                      );
                                 })}
