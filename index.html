@@ -121,12 +121,40 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
+        // Add helper functions at the top for data mapping
+        const mapParameterToId = (parameter) => {
+            const mapping = {
+                "CTA Production": "cta_prod",
+                "PTA Production": "pta_prod",
+                "Availability": "availability",
+                "Total Power": "total_power",
+                "HAc Consum": "hac_consum",
+                "Natural Gas": "natural_gas",
+                "Caustic (NaOH)": "caustic",
+                "CMB Catalyst": "cmb_catalyst",
+                "Equiv. CMB Recovery": "cmb_recovery"
+            };
+            return mapping[parameter] || parameter.toLowerCase().replace(/\s+/g, '_');
+        };
+
+        const getCategory = (parameter) => {
+            const productionParams = ["CTA Production", "PTA Production", "Availability"];
+            const utilityParams = [
+                "Total Power", "HAc Consum", "Natural Gas", 
+                "Caustic (NaOH)", "CMB Catalyst", "Equiv. CMB Recovery"
+            ];
+            
+            if (productionParams.includes(parameter)) return "production";
+            if (utilityParams.includes(parameter)) return "utility";
+            
+            return "production"; // Default category
+        };
+        
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
         const { 
             LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
             Tooltip, ResponsiveContainer, ReferenceLine, Legend, ComposedChart
         } = Recharts;
-        
         // --- Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
@@ -137,7 +165,6 @@
             appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
         };
         const APP_ID = 'dashboard-fced7';
-        
         // --- Icons ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
@@ -161,21 +188,16 @@
             };
             return icons[name] || icons.Activity;
         };
-        
         // --- Helper Functions ---
         const formatNumber = (value, decimals = 2) => {
             if (value === null || value === undefined || value === '') return '-';
             if (typeof value === 'string' && (value.includes('No Good Data') || value.includes('Bad') || value.includes('Resize'))) return '-';
-            
             let num = parseFloat(value);
             if (isNaN(num)) return '-';
-            
             return num.toFixed(decimals);
         };
-        
         const parseTime = (timeStr) => {
             if (!timeStr) return "00:00";
-            
             // Handle full datetime format: "2025-11-27 14:20:44.890000"
             if (timeStr.includes('-') && timeStr.includes(':')) {
                 try {
@@ -191,12 +213,10 @@
                     // Fallback to other formats
                 }
             }
-            
             // Handle time strings with AM/PM
             if (timeStr.includes('AM') || timeStr.includes('PM')) {
                 return timeStr.replace(/(\d+:\d+)(:\d+)?\s*(AM|PM)/i, '$1 $3');
             }
-            
             // Handle 24-hour format
             if (timeStr.includes(':')) {
                 const parts = timeStr.split(':');
@@ -208,10 +228,8 @@
                     return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
                 }
             }
-            
             return timeStr;
         };
-        
         // --- Components ---
         const StatCard = ({ title, value, unit, target, icon, loading = false }) => {
             if (loading) {
@@ -219,12 +237,10 @@
                     <div className="metric-card rounded-xl p-5 skeleton"></div>
                 );
             }
-            
             // Determine status color based on value vs target
             let statusColor = 'text-gray-400';
             const numValue = parseFloat(value);
             const numTarget = parseFloat(target);
-            
             if (!isNaN(numValue) && !isNaN(numTarget)) {
                 if (title.includes('Availability') || title.includes('Recovery')) {
                     // Higher is better
@@ -238,7 +254,6 @@
                     else statusColor = 'text-status-crit';
                 }
             }
-            
             return (
                 <div className="metric-card rounded-xl p-5 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -265,13 +280,11 @@
                 </div>
             );
         };
-        
         const PasswordGate = ({ onLogin }) => {
             const [password, setPassword] = useState('');
             const [remember, setRemember] = useState(false);
             const [error, setError] = useState(false);
             const [showPassword, setShowPassword] = useState(false);
-            
             const handleSubmit = (e) => {
                 e.preventDefault();
                 if (password === 'rpcm2024') { 
@@ -282,7 +295,6 @@
                     setPassword('');
                 }
             };
-            
             return (
                 <div className="min-h-screen flex items-center justify-center bg-plant-bg p-4">
                     <div className="glass-panel p-8 rounded-2xl w-full max-w-md relative overflow-hidden">
@@ -332,12 +344,10 @@
                 </div>
             );
         };
-        
         const Settings = ({ user, db }) => {
             return (
                 <div className="p-4 md:p-6 md:ml-64 text-white min-h-screen">
                     <h1 className="text-2xl md:text-3xl font-bold mb-6">Data Structure Information</h1>
-                    
                     <div className="glass-panel p-6 rounded-2xl">
                         <div className="flex items-center gap-3 mb-5">
                             <div className="p-2 bg-accent-primary/20 rounded-lg text-accent-primary">
@@ -345,7 +355,6 @@
                             </div>
                             <h2 className="text-xl font-bold">Dashboard Data Structure</h2>
                         </div>
-                        
                         <div className="space-y-4">
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Current Data Path</h3>
@@ -357,7 +366,6 @@
                                     <code>RP_Hourly_Trends</code>
                                 </div>
                             </div>
-                            
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Debug Information</h3>
                                 <p className="text-sm text-gray-300 mb-2">
@@ -370,7 +378,6 @@
                                     <li>Try refreshing the page after ensuring new data has been uploaded</li>
                                 </ul>
                             </div>
-                            
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Manual Refresh</h3>
                                 <p className="text-sm text-gray-300 mb-3">
@@ -386,28 +393,23 @@
                 </div>
             );
         };
-        
         const Dashboard = ({ dailyData, hourlyData, isLoading, onRefresh, loadError }) => {
             const [chartHours, setChartHours] = useState(12);
-            
             const getVal = (cat, id) => {
                 if (isLoading) return '0';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.value : '0';
             };
-            
             const getTarget = (cat, id) => {
                 if (isLoading) return '0';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.target : '0';
             };
-            
             const getUnit = (cat, id) => {
                 if (isLoading) return '';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.unit : '';
             };
-            
             // Process and format hourly data
             const processedHourlyData = useMemo(() => {
                 return hourlyData.map(item => ({
@@ -416,11 +418,9 @@
                     stg_gen: item.STG_Power || 0
                 }));
             }, [hourlyData]);
-            
             // Limit the chart to the specified number of hours
             const chartData = useMemo(() => {
                 if (!processedHourlyData || processedHourlyData.length === 0) return [];
-                
                 // Filter and sort hourly data
                 return processedHourlyData
                     .filter(log => log.time && log.time !== "00:00" && log.plant_power > 0)
@@ -428,7 +428,6 @@
                         // Try to sort by original timestamp if available
                         const timeA = hourlyData.find(h => parseTime(h.Timestamp) === a.time)?.Timestamp;
                         const timeB = hourlyData.find(h => parseTime(h.Timestamp) === b.time)?.Timestamp;
-                        
                         if (timeA && timeB) {
                             return new Date(timeA) - new Date(timeB);
                         }
@@ -436,25 +435,19 @@
                     })
                     .slice(-chartHours); // Limit to specified number of hours
             }, [processedHourlyData, hourlyData, chartHours]);
-            
             const latestTime = useMemo(() => {
                 if (isLoading) return "Loading...";
                 if (!hourlyData || hourlyData.length === 0) return "No recent data";
-                
                 // Get the most recent valid timestamp
                 const validLogs = hourlyData
                     .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
                     .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-                
                 if (validLogs.length === 0) return "No valid hourly data";
-                
                 const lastLog = validLogs[0];
                 return parseTime(lastLog.Timestamp) || "Unknown time";
             }, [hourlyData, isLoading]);
-            
             const CustomTooltip = ({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
-                
                 return (
                     <div className="chart-tooltip">
                         <p className="font-bold mb-1">{label}</p>
@@ -466,7 +459,6 @@
                     </div>
                 );
             };
-            
             if (loadError) {
                 return (
                     <div className="p-4 md:p-8 space-y-8 md:ml-64 min-h-screen flex items-center justify-center">
@@ -490,7 +482,6 @@
                     </div>
                 );
             }
-            
             if (isLoading && (!dailyData.production || dailyData.production.length === 0)) {
                 return (
                     <div className="p-4 md:p-8 space-y-8 md:ml-64 min-h-screen flex items-center justify-center">
@@ -502,7 +493,6 @@
                     </div>
                 );
             }
-            
             return (
                 <div className="p-4 md:p-6 space-y-6 min-h-screen pb-24 md:ml-64">
                     {/* Header */}
@@ -536,7 +526,6 @@
                             )}
                         </div>
                     </div>
-                    
                     {/* 1. Top Row: Key Production KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <StatCard 
@@ -564,7 +553,6 @@
                             loading={isLoading}
                         />
                     </div>
-                    
                     {/* 2. Charts Row */}
                     <div className="glass-panel p-4 md:p-6 rounded-2xl">
                         <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -664,7 +652,6 @@
                             </ResponsiveContainer>
                         </div>
                     </div>
-                    
                     {/* 3. Utilities & Consumption Grid (Today) */}
                     <div className="glass-panel p-4 md:p-6 rounded-2xl">
                         <h3 className="text-lg font-semibold mb-4 md:mb-6 flex items-center gap-2">
@@ -702,7 +689,6 @@
                             ))}
                         </div>
                     </div>
-                    
                     {/* Data Freshness Footer */}
                     <div className="text-center text-xs text-gray-500 mt-4 pt-4 border-t border-plant-border">
                         <p>Data automatically refreshed from Emerson DeltaV system • Last update: {new Date().toLocaleString('en-US', { 
@@ -715,14 +701,12 @@
                 </div>
             );
         };
-        
         const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
             const items = [
                 { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
                 { id: 'logs', icon: 'Table2', label: 'Hourly Logs' },
                 { id: 'settings', icon: 'Settings', label: 'Settings' },
             ];
-            
             return (
                 <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
                     <div className="p-6 flex items-center gap-3">
@@ -760,12 +744,10 @@
                 </div>
             );
         };
-        
         const HourlyLogs = ({ hourlyData, isLoading, onRefresh, loadError }) => {
             // Filter and sort hourly data for display
             const sortedLogs = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return [];
-                
                 return [...hourlyData]
                     .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
                     .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
@@ -775,7 +757,6 @@
                         stg_gen: log.STG_Power || 0
                     }));
             }, [hourlyData]);
-            
             if (loadError) {
                 return (
                     <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
@@ -797,7 +778,6 @@
                     </div>
                 );
             }
-            
             if (isLoading) {
                 return (
                     <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
@@ -807,7 +787,6 @@
                     </div>
                 );
             }
-            
             return (
                 <div className="p-4 md:p-6 md:ml-64 min-h-screen">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -831,7 +810,6 @@
                             </button>
                         </div>
                     </div>
-                    
                     <div className="glass-panel rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -883,7 +861,6 @@
                                 </tbody>
                             </table>
                         </div>
-                        
                         {sortedLogs.length > 0 && (
                             <div className="p-3 border-t border-plant-border bg-plant-bg/30 text-xs text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-2">
                                 <div>
@@ -895,7 +872,6 @@
                 </div>
             );
         };
-        
         // Main App Component
         const App = () => {
             // Safe Auth Logic
@@ -909,16 +885,17 @@
                     return !!sessionStorage.getItem('rpcm_authenticated');
                 } catch { return false; }
             });
-            
             const [activeTab, setActiveTab] = useState('dashboard');
             const [user, setUser] = useState(null);
             const [firebaseReady, setFirebaseReady] = useState(false);
             const [isLoading, setIsLoading] = useState(true);
             const [loadError, setLoadError] = useState(null);
             const [lastUpdate, setLastUpdate] = useState(null);
-            
-            // Data State
-            const [dailyData, setDailyData] = useState([]);
+            // Data State - initialize with proper structure
+            const [dailyData, setDailyData] = useState({
+                production: [],
+                utility: []
+            });
             const [hourlyData, setHourlyData] = useState([]);
             
             useEffect(() => {
@@ -933,22 +910,17 @@
             
             useEffect(() => {
                 let authTimeout;
-                
                 if (!firebaseReady) return;
-                
                 console.log("Initializing Firebase authentication");
                 const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged } = window.firebaseModules;
                 try {
                     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
                     const auth = getAuth(app);
-                    
                     // Sign in anonymously
                     signInAnonymously(auth).catch(console.error);
-                    
                     const unsubscribe = onAuthStateChanged(auth, (u) => {
                         console.log("Auth state changed:", u ? "logged in" : "not logged in");
                         setUser(u);
-                        
                         // If authenticated but no user, try again after delay
                         if (!u) {
                             authTimeout = setTimeout(() => {
@@ -957,7 +929,6 @@
                             }, 5000);
                         }
                     });
-                    
                     return () => {
                         unsubscribe();
                         if (authTimeout) clearTimeout(authTimeout);
@@ -978,11 +949,9 @@
                     setIsLoading(true);
                     return;
                 }
-                
                 console.log("Setting up Firestore listeners");
                 setLoadError(null);
                 setIsLoading(true);
-                
                 const { getFirestore, collection, doc, onSnapshot, query, orderBy } = window.firebaseModules;
                 const db = getFirestore();
                 let dailyUnsub, hourlyUnsub;
@@ -995,18 +964,35 @@
                         collection(db, "RP_Daily_Report"), 
                         (snapshot) => {
                             console.log(`Received ${snapshot.size} documents for daily data`);
-                            const newData = [];
+                            // Transform data to match dashboard expectations
+                            const transformedData = {
+                                production: [],
+                                utility: []
+                            };
+                            
                             snapshot.forEach(doc => {
                                 const data = doc.data();
                                 if (data.Parameter && data.Parameter.trim() !== '') {
-                                    newData.push(data);
+                                    // Map your fields to what the dashboard expects
+                                    const item = {
+                                        id: mapParameterToId(data.Parameter),
+                                        value: data.Actual,
+                                        target: data.Target,
+                                        unit: data.Unit,
+                                        category: getCategory(data.Parameter)
+                                    };
+                                    
+                                    // Add to appropriate category
+                                    if (item.category && transformedData[item.category]) {
+                                        transformedData[item.category].push(item);
+                                    }
                                 }
                             });
                             
-                            setDailyData(newData);
-                            
+                            setDailyData(transformedData);
                             // Only set loading to false after first data load
-                            if (initialLoad && newData.length > 0) {
+                            if (initialLoad && 
+                                (transformedData.production.length > 0 || transformedData.utility.length > 0)) {
                                 console.log("Initial daily data load complete");
                                 setIsLoading(false);
                                 initialLoad = false;
@@ -1014,8 +1000,8 @@
                             }
                         },
                         (error) => {
-                            console.error("Error fetching daily data:", error);
-                            setLoadError({ message: "Error loading daily data: " + error.message });
+                            console.error("Error fetching daily ", error);
+                            setLoadError({ message: "Error loading daily  " + error.message });
                             setIsLoading(false);
                         }
                     );
@@ -1036,11 +1022,10 @@
                             setHourlyData(logs);
                         },
                         (error) => {
-                            console.error("Error fetching hourly data:", error);
+                            console.error("Error fetching hourly ", error);
                             setLoadError({ message: "Error loading hourly data: " + error.message });
                         }
                     );
-                    
                 } catch (error) {
                     console.error("Error setting up Firestore listeners:", error);
                     setLoadError({ message: "Error setting up data listeners: " + error.message });
@@ -1059,7 +1044,7 @@
                 setLoadError(null);
                 setIsLoading(true);
                 // Force re-subscription by re-initializing state
-                setDailyData([]);
+                setDailyData({ production: [], utility: [] });
                 setHourlyData([]);
                 // Firestore will automatically re-fetch data due to the onSnapshot listeners
             };
@@ -1099,8 +1084,6 @@
             return (
                 <div className="min-h-screen bg-plant-bg text-slate-200 selection:bg-accent-primary selection:text-white">
                     <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
-                    <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                    
                     {activeTab === 'dashboard' && (
                         <Dashboard 
                             dailyData={dailyData} 
@@ -1110,7 +1093,6 @@
                             loadError={loadError}
                         />
                     )}
-                    
                     {activeTab === 'logs' && (
                         <HourlyLogs
                             hourlyData={hourlyData}
@@ -1119,7 +1101,6 @@
                             loadError={loadError}
                         />
                     )}
-                    
                     {activeTab === 'settings' && <Settings user={user} db={null} />}
                 </div>
             );
