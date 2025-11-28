@@ -386,11 +386,29 @@
                 return recent24.reverse();
             }, [hourlyData]);
 
+            // IMPROVED DATA FETCHER
             const getDataItem = (key) => {
                 if (!dailyData) return null;
+                // 1. Try exact key match
                 if (dailyData[key] !== undefined) return dailyData[key];
+                
+                // 2. Try explicit mapping for complex keys (dot/parenthesis safety)
+                const keyMap = {
+                    'Caustic (NaOH)': 'Caustic_NaOH', 
+                    'Caustic_(NaOH)': 'Caustic_NaOH',
+                    'Equiv. CMB Recovery': 'Equiv_CMB_Recovery',
+                    'Equiv._CMB_Recovery': 'Equiv_CMB_Recovery',
+                    'CMB Catalyst': 'CMB_Catalyst',
+                    'HAc Consum': 'HAc_Consum',
+                    'Total Power': 'Total_Power',
+                    'Natural Gas': 'Natural_Gas'
+                };
+                if (keyMap[key] && dailyData[keyMap[key]] !== undefined) return dailyData[keyMap[key]];
+
+                // 3. Fallback: try standard replace (space -> underscore)
                 const underscoreKey = key.replace(/ /g, '_');
                 if (dailyData[underscoreKey] !== undefined) return dailyData[underscoreKey];
+                
                 return null;
             };
 
@@ -481,7 +499,7 @@
                                     </div>
                                     <div className="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
                                         <span className="text-[9px] text-gray-500 uppercase">Target</span>
-                                        <span className="text-[10px] text-gray-300 font-mono">{formatNumber(getTarget(item.k), 0)}</span>
+                                        <span className="text-[10px] text-gray-300 font-mono">{formatNumber(getTarget(item.k))}</span>
                                     </div>
                                 </div>
                             ))}
