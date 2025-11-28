@@ -96,6 +96,14 @@
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-enter { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* Checkbox Customization */
+        .custom-checkbox {
+            accent-color: #3b82f6;
+            width: 1rem;
+            height: 1rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -162,11 +170,7 @@
             if (!isNaN(d.getTime())) return d.getTime();
 
             // 3. Custom Parsing for "DD/MM/YYYY H AM" or "DD/MM/YYYY H:MM AM"
-            // Replace - with /
             str = str.replace(/-/g, '/');
-            
-            // Regex to capture Date, Time, Ampm
-            // Matches: 28/11/2025 2 PM, 28/11/2025 2:30 PM
             const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
             
             if (match) {
@@ -175,12 +179,8 @@
                 month = parseInt(month);
                 year = parseInt(year);
                 
-                // Swap day/month if month > 12 (American format detection)
-                if (month > 12) {
-                    [day, month] = [month, day];
-                }
+                if (month > 12) { [day, month] = [month, day]; } // Swap if US format detected
                 
-                // Handle AM/PM
                 if (ampm) {
                     hours = parseInt(hours);
                     if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
@@ -189,24 +189,17 @@
                     hours = parseInt(hours);
                 }
                 
-                // Create Date (Month is 0-indexed)
                 const d2 = new Date(year, month - 1, day, hours, parseInt(minutes || 0));
                 if (!isNaN(d2.getTime())) return d2.getTime();
             }
-            
             return 0; // Truly invalid
         };
 
         const parseDateTime = (input) => {
             const epoch = getEpoch(input);
             if (epoch === 0) return String(input);
-            
             return new Date(epoch).toLocaleString('en-US', {
-                month: 'short', 
-                day: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
             });
         };
 
@@ -258,11 +251,12 @@
         const PasswordGate = ({ onLogin }) => {
             const [password, setPassword] = useState('');
             const [showPwd, setShowPwd] = useState(false);
+            const [rememberMe, setRememberMe] = useState(false);
             const [error, setError] = useState(false);
             
             const handleSubmit = (e) => {
                 e.preventDefault();
-                if (password === 'rpcm') onLogin();
+                if (password === 'rpcm2024') onLogin(rememberMe);
                 else { setError(true); setPassword(''); }
             };
             
@@ -273,7 +267,8 @@
                             <Icon name="Factory" size={32} />
                         </div>
                         <h1 className="text-xl font-bold text-center mb-1 text-white">RPCM Monitor</h1>
-                        <p className="text-gray-400 text-center mb-8 text-sm">Restricted Access</p>
+                        <p className="text-gray-400 text-center mb-6 text-sm">Restricted Access</p>
+                        
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
                                 <input
@@ -287,6 +282,18 @@
                                     <Icon name={showPwd ? "EyeOff" : "Eye"} size={18} />
                                 </button>
                             </div>
+                            
+                            <div className="flex items-center gap-2 justify-center mb-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="remember" 
+                                    checked={rememberMe} 
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="custom-checkbox rounded border-gray-600 bg-plant-bg text-accent-primary focus:ring-accent-primary"
+                                />
+                                <label htmlFor="remember" className="text-xs text-gray-400 select-none cursor-pointer">Remember me for 30 days</label>
+                            </div>
+
                             {error && <p className="text-status-crit text-xs text-center">Invalid credential</p>}
                             <button className="w-full bg-accent-primary text-white font-bold py-3 rounded-xl shadow-glow hover:bg-blue-600 transition-all">
                                 Enter Dashboard
@@ -305,8 +312,6 @@
                     epoch: getEpoch(log.Timestamp),
                     timeStr: parseDateTime(log.Timestamp)
                 }));
-                
-                // Sort Descending by Epoch
                 return logs.sort((a, b) => b.epoch - a.epoch);
             }, [hourlyData]);
 
@@ -318,8 +323,6 @@
                         <h2 className="text-lg font-bold text-white">Hourly Logs</h2>
                         <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-accent-primary"><Icon name="RefreshCw" size={18} /></button>
                     </div>
-                    
-                    {/* MOBILE CARD VIEW */}
                     <div className="md:hidden space-y-3">
                         {sortedLogs.map((row, i) => {
                             const net = (row.Plant_Power || 0) - (row.STG_Power || 0);
@@ -340,8 +343,6 @@
                             )
                         })}
                     </div>
-
-                    {/* DESKTOP TABLE VIEW */}
                     <div className="hidden md:block glass-panel rounded-xl overflow-hidden">
                         <table className="w-full text-sm">
                             <thead className="bg-plant-bg/50 text-gray-400 uppercase text-xs">
@@ -374,36 +375,34 @@
         const Dashboard = ({ dailyData, hourlyData, isLoading, onRefresh }) => {
             const chartData = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return [];
-                
-                // 1. Process with Epochs
                 const processed = hourlyData.map(log => ({
                     time: parseDateTime(log.Timestamp),
                     plant_power: log.Plant_Power || 0,
                     stg_gen: log.STG_Power || 0,
                     epoch: getEpoch(log.Timestamp)
-                })).filter(l => l.epoch > 0); // Only chart valid dates
-
-                // 2. Sort Newest First (Descending) to get the latest 24
+                })).filter(l => l.epoch > 0);
                 processed.sort((a, b) => b.epoch - a.epoch);
-                
-                // 3. Take Top 24
                 const recent24 = processed.slice(0, 24);
-                
-                // 4. Reverse for Chart (Oldest Left -> Newest Right)
                 return recent24.reverse();
             }, [hourlyData]);
 
-            const getValue = (key) => dailyData[key]?.Actual ?? 0;
-            const getTarget = (key) => dailyData[key]?.Target ?? 0;
-            const getUnit = (key) => dailyData[key]?.Unit ?? '';
+            const getDataItem = (key) => {
+                if (!dailyData) return null;
+                if (dailyData[key] !== undefined) return dailyData[key];
+                const underscoreKey = key.replace(/ /g, '_');
+                if (dailyData[underscoreKey] !== undefined) return dailyData[underscoreKey];
+                return null;
+            };
 
-            // Get Last Updated info
+            const getValue = (key) => getDataItem(key)?.Actual ?? 0;
+            const getTarget = (key) => getDataItem(key)?.Target ?? 0;
+            const getUnit = (key) => getDataItem(key)?.Unit ?? '';
+
             const lastUpdated = useMemo(() => {
                 if (dailyData.Last_Updated) return parseDateTime(dailyData.Last_Updated);
                 if (dailyData.last_updated) return parseDateTime(dailyData.last_updated);
                 
                 if (hourlyData && hourlyData.length > 0) {
-                     // Find latest timestamp
                      let maxEpoch = 0;
                      let latestTS = null;
                      hourlyData.forEach(item => {
@@ -432,9 +431,7 @@
                                 Last Updated: <span className="font-mono text-white ml-1">{lastUpdated}</span>
                             </p>
                         </div>
-                        <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-gray-300">
-                            <Icon name="RefreshCw" size={20} />
-                        </button>
+                        <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-gray-300"><Icon name="RefreshCw" size={20} /></button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -502,7 +499,6 @@
             const [loading, setLoading] = useState(false);
             const [errorMsg, setErrorMsg] = useState(null);
 
-            // 1. WAIT FOR FIREBASE MODULES
             useEffect(() => {
                 if (window.firebaseModulesLoaded) {
                     setIsFirebaseReady(true);
@@ -518,30 +514,20 @@
             const initFirebase = async () => {
                 try {
                     const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, onSnapshot, query, orderBy } = window.firebaseModules;
-                    
-                    // Initialize App
                     const app = initializeApp(firebaseConfig);
                     const authInstance = getAuth(app);
                     const db = getFirestore(app);
                     
-                    // Auth Listener
                     onAuthStateChanged(authInstance, (user) => {
                          if (user) {
-                             // Start Data Listeners
                              setLoading(true);
-                             
-                             // Daily
                              onSnapshot(doc(db, "RP_Daily_Report", "Daily_Snapshot"), (docSnap) => {
                                 if (docSnap.exists()) {
-                                    const d = docSnap.data();
-                                    // Flatten the data but keep structure
-                                    const dailyParams = { ...d }; 
-                                    setData(prev => ({ ...prev, daily: dailyParams }));
+                                    setData(prev => ({ ...prev, daily: { ...docSnap.data() } }));
                                     setLoading(false);
                                 }
                              }, (err) => setErrorMsg("Error reading Daily: " + err.message));
 
-                             // Hourly
                              const q = query(collection(db, "RP_Daily_Report/Daily_Snapshot/RP_Hourly_Trends"), orderBy("Timestamp", "desc"));
                              onSnapshot(q, (snap) => {
                                 const logs = [];
@@ -551,10 +537,25 @@
                          }
                     });
 
-                    // Auto Sign In if Token Exists or just Do it
-                    if (sessionStorage.getItem('rpcm_auth')) {
+                    // 1. Check Session (Temporary)
+                    if (sessionStorage.getItem('rpcm_auth_session')) {
                         setAuth(true);
                         await signInAnonymously(authInstance);
+                        return;
+                    }
+
+                    // 2. Check Local (Persistent)
+                    const token = localStorage.getItem('rpcm_auth_token');
+                    if (token) {
+                        try {
+                            const { expiry } = JSON.parse(token);
+                            if (new Date().getTime() < expiry) {
+                                setAuth(true);
+                                await signInAnonymously(authInstance);
+                            } else {
+                                localStorage.removeItem('rpcm_auth_token');
+                            }
+                        } catch(e) { localStorage.removeItem('rpcm_auth_token'); }
                     }
 
                 } catch (err) {
@@ -562,11 +563,26 @@
                 }
             };
 
-            const handleLogin = async () => {
-                sessionStorage.setItem('rpcm_auth', '1');
+            const handleLogin = async (rememberMe) => {
+                // If remember me is checked, set 30-day token in localStorage
+                if (rememberMe) {
+                    const expiry = new Date().getTime() + (30 * 24 * 60 * 60 * 1000);
+                    localStorage.setItem('rpcm_auth_token', JSON.stringify({ valid: true, expiry }));
+                } else {
+                    // Otherwise set session-only flag
+                    sessionStorage.setItem('rpcm_auth_session', '1');
+                }
+                
                 setAuth(true);
                 const { getAuth, signInAnonymously } = window.firebaseModules;
                 await signInAnonymously(getAuth());
+            };
+
+            const handleSignOut = () => {
+                setAuth(false);
+                localStorage.removeItem('rpcm_auth_token');
+                sessionStorage.removeItem('rpcm_auth_session');
+                window.location.reload();
             };
 
             const handleRefresh = () => {
@@ -579,8 +595,7 @@
             if (!auth) return <PasswordGate onLogin={handleLogin} />;
 
             return (
-                <div className="min-h-screen max-w-7xl mx-auto md:flex">
-                    {/* Desktop Sidebar */}
+                <div className="min-h-screen w-full md:flex">
                     <div className="hidden md:flex w-64 flex-col fixed h-full border-r border-plant-border bg-plant-card z-20">
                         <div className="p-6">
                             <h1 className="text-xl font-bold text-white tracking-wider">RPCM <span className="text-accent-primary">.Monitor</span></h1>
@@ -594,19 +609,17 @@
                             </button>
                         </nav>
                         <div className="p-6">
-                            <button onClick={() => {setAuth(false); sessionStorage.clear(); window.location.reload();}} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300">
+                            <button onClick={handleSignOut} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300">
                                 <Icon name="LogOut" size={16} /> Sign Out
                             </button>
                         </div>
                     </div>
 
-                    {/* Main Content */}
                     <main className="flex-1 md:ml-64 p-4 md:p-8 min-h-screen">
                         {activeTab === 'dash' && <Dashboard dailyData={data.daily} hourlyData={data.hourly} isLoading={loading} onRefresh={handleRefresh} />}
                         {activeTab === 'logs' && <HourlyLogs hourlyData={data.hourly} isLoading={loading} onRefresh={handleRefresh} />}
                     </main>
 
-                    {/* Mobile Bottom Nav */}
                     <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav shadow-nav z-50 pb-safe pt-2 px-6 flex justify-between items-center h-[80px]">
                         <button onClick={() => setActiveTab('dash')} className={`flex flex-col items-center gap-1 ${activeTab==='dash' ? 'text-accent-primary' : 'text-gray-500'}`}>
                             <div className={`p-1.5 rounded-full ${activeTab==='dash' ? 'bg-accent-primary/20' : ''}`}><Icon name="LayoutDashboard" size={22} /></div>
@@ -618,7 +631,7 @@
                             <span className="text-[10px] font-medium">Logs</span>
                         </button>
                         <div className="w-px h-8 bg-white/10"></div>
-                        <button onClick={() => {setAuth(false); sessionStorage.clear(); window.location.reload();}} className="flex flex-col items-center gap-1 text-gray-500">
+                        <button onClick={handleSignOut} className="flex flex-col items-center gap-1 text-gray-500">
                             <div className="p-1.5"><Icon name="LogOut" size={22} /></div>
                             <span className="text-[10px] font-medium">Exit</span>
                         </button>
