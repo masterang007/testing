@@ -593,13 +593,6 @@
                             >
                                 <Icon name="RefreshCw" size={14} className={isLoading ? "animate-spin" : ""} />
                                 Refresh
-                            </button>
-                            {!isLoading && (
-                                <div className="bg-plant-card px-3 py-1.5 rounded-lg text-sm border border-plant-border flex items-center gap-2">
-                                    <div className="time-badge">{chartHours}h</div>
-                                    <span className="text-gray-400 mr-1">CTA:</span>
-                                    <span className="font-mono">{getVal('CTA Production')} {getUnit('CTA Production')}</span>
-                                </div>
                             )}
                         </div>
                     </div>
