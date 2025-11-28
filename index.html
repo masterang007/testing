@@ -116,45 +116,31 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
+        .debug-info {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid #10b981;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        .error-info {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        // Add helper functions at the top for data mapping
-        const mapParameterToId = (parameter) => {
-            const mapping = {
-                "CTA Production": "cta_prod",
-                "PTA Production": "pta_prod",
-                "Availability": "availability",
-                "Total Power": "total_power",
-                "HAc Consum": "hac_consum",
-                "Natural Gas": "natural_gas",
-                "Caustic (NaOH)": "caustic",
-                "CMB Catalyst": "cmb_catalyst",
-                "Equiv. CMB Recovery": "cmb_recovery"
-            };
-            return mapping[parameter] || parameter.toLowerCase().replace(/\s+/g, '_');
-        };
-
-        const getCategory = (parameter) => {
-            const productionParams = ["CTA Production", "PTA Production", "Availability"];
-            const utilityParams = [
-                "Total Power", "HAc Consum", "Natural Gas", 
-                "Caustic (NaOH)", "CMB Catalyst", "Equiv. CMB Recovery"
-            ];
-            
-            if (productionParams.includes(parameter)) return "production";
-            if (utilityParams.includes(parameter)) return "utility";
-            
-            return "production"; // Default category
-        };
-        
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
         const { 
             LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
             Tooltip, ResponsiveContainer, ReferenceLine, Legend, ComposedChart
         } = Recharts;
+        
         // --- Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
@@ -165,6 +151,7 @@
             appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
         };
         const APP_ID = 'dashboard-fced7';
+        
         // --- Icons ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
@@ -188,16 +175,21 @@
             };
             return icons[name] || icons.Activity;
         };
+        
         // --- Helper Functions ---
         const formatNumber = (value, decimals = 2) => {
             if (value === null || value === undefined || value === '') return '-';
             if (typeof value === 'string' && (value.includes('No Good Data') || value.includes('Bad') || value.includes('Resize'))) return '-';
+            
             let num = parseFloat(value);
             if (isNaN(num)) return '-';
+            
             return num.toFixed(decimals);
         };
+        
         const parseTime = (timeStr) => {
             if (!timeStr) return "00:00";
+            
             // Handle full datetime format: "2025-11-27 14:20:44.890000"
             if (timeStr.includes('-') && timeStr.includes(':')) {
                 try {
@@ -213,10 +205,12 @@
                     // Fallback to other formats
                 }
             }
+            
             // Handle time strings with AM/PM
             if (timeStr.includes('AM') || timeStr.includes('PM')) {
                 return timeStr.replace(/(\d+:\d+)(:\d+)?\s*(AM|PM)/i, '$1 $3');
             }
+            
             // Handle 24-hour format
             if (timeStr.includes(':')) {
                 const parts = timeStr.split(':');
@@ -228,8 +222,10 @@
                     return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
                 }
             }
+            
             return timeStr;
         };
+        
         // --- Components ---
         const StatCard = ({ title, value, unit, target, icon, loading = false }) => {
             if (loading) {
@@ -237,10 +233,12 @@
                     <div className="metric-card rounded-xl p-5 skeleton"></div>
                 );
             }
+            
             // Determine status color based on value vs target
             let statusColor = 'text-gray-400';
             const numValue = parseFloat(value);
             const numTarget = parseFloat(target);
+            
             if (!isNaN(numValue) && !isNaN(numTarget)) {
                 if (title.includes('Availability') || title.includes('Recovery')) {
                     // Higher is better
@@ -254,6 +252,7 @@
                     else statusColor = 'text-status-crit';
                 }
             }
+            
             return (
                 <div className="metric-card rounded-xl p-5 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -280,11 +279,13 @@
                 </div>
             );
         };
+        
         const PasswordGate = ({ onLogin }) => {
             const [password, setPassword] = useState('');
             const [remember, setRemember] = useState(false);
             const [error, setError] = useState(false);
             const [showPassword, setShowPassword] = useState(false);
+            
             const handleSubmit = (e) => {
                 e.preventDefault();
                 if (password === 'rpcm2024') { 
@@ -295,6 +296,7 @@
                     setPassword('');
                 }
             };
+            
             return (
                 <div className="min-h-screen flex items-center justify-center bg-plant-bg p-4">
                     <div className="glass-panel p-8 rounded-2xl w-full max-w-md relative overflow-hidden">
@@ -344,10 +346,12 @@
                 </div>
             );
         };
+        
         const Settings = ({ user, db }) => {
             return (
                 <div className="p-4 md:p-6 md:ml-64 text-white min-h-screen">
                     <h1 className="text-2xl md:text-3xl font-bold mb-6">Data Structure Information</h1>
+                    
                     <div className="glass-panel p-6 rounded-2xl">
                         <div className="flex items-center gap-3 mb-5">
                             <div className="p-2 bg-accent-primary/20 rounded-lg text-accent-primary">
@@ -355,17 +359,19 @@
                             </div>
                             <h2 className="text-xl font-bold">Dashboard Data Structure</h2>
                         </div>
+                        
                         <div className="space-y-4">
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Current Data Path</h3>
                                 <p className="text-sm text-gray-300">
-                                    This dashboard is reading from the correct Firestore path used by your Python script:
+                                    This dashboard is reading from the correct Firestore path used by your export_to_csv_parser.txt script:
                                 </p>
                                 <div className="mt-2 p-3 bg-gray-900 rounded font-mono text-xs">
-                                    <code>RP_Daily_Report</code><br />
-                                    <code>RP_Hourly_Trends</code>
+                                    <code>artifacts/dashboard-fced7/public/data/daily_summary</code><br />
+                                    <code>artifacts/dashboard-fced7/public/data/hourly_logs</code>
                                 </div>
                             </div>
+                            
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Debug Information</h3>
                                 <p className="text-sm text-gray-300 mb-2">
@@ -378,6 +384,7 @@
                                     <li>Try refreshing the page after ensuring new data has been uploaded</li>
                                 </ul>
                             </div>
+                            
                             <div className="p-4 bg-plant-bg/50 rounded-lg border border-plant-border">
                                 <h3 className="font-semibold mb-2">Manual Refresh</h3>
                                 <p className="text-sm text-gray-300 mb-3">
@@ -393,61 +400,63 @@
                 </div>
             );
         };
+        
         const Dashboard = ({ dailyData, hourlyData, isLoading, onRefresh, loadError }) => {
             const [chartHours, setChartHours] = useState(12);
+            
             const getVal = (cat, id) => {
                 if (isLoading) return '0';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.value : '0';
             };
+            
             const getTarget = (cat, id) => {
                 if (isLoading) return '0';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.target : '0';
             };
+            
             const getUnit = (cat, id) => {
                 if (isLoading) return '';
                 const item = dailyData[cat]?.find(x => x.id === id);
                 return item ? item.unit : '';
             };
-            // Process and format hourly data
-            const processedHourlyData = useMemo(() => {
-                return hourlyData.map(item => ({
-                    time: parseTime(item.Timestamp),
-                    plant_power: item.Plant_Power || 0,
-                    stg_gen: item.STG_Power || 0
-                }));
-            }, [hourlyData]);
+            
             // Limit the chart to the specified number of hours
             const chartData = useMemo(() => {
-                if (!processedHourlyData || processedHourlyData.length === 0) return [];
+                if (!hourlyData || hourlyData.length === 0) return [];
+                
                 // Filter and sort hourly data
-                return processedHourlyData
+                return hourlyData
                     .filter(log => log.time && log.time !== "00:00" && log.plant_power > 0)
                     .sort((a, b) => {
                         // Try to sort by original timestamp if available
-                        const timeA = hourlyData.find(h => parseTime(h.Timestamp) === a.time)?.Timestamp;
-                        const timeB = hourlyData.find(h => parseTime(h.Timestamp) === b.time)?.Timestamp;
-                        if (timeA && timeB) {
-                            return new Date(timeA) - new Date(timeB);
+                        if (a.original_time && b.original_time) {
+                            return new Date(a.original_time) - new Date(b.original_time);
                         }
                         return a.time.localeCompare(b.time);
                     })
                     .slice(-chartHours); // Limit to specified number of hours
-            }, [processedHourlyData, hourlyData, chartHours]);
+            }, [hourlyData, chartHours]);
+            
             const latestTime = useMemo(() => {
                 if (isLoading) return "Loading...";
                 if (!hourlyData || hourlyData.length === 0) return "No recent data";
-                // Get the most recent valid timestamp
+                
+                // Filter out invalid entries and get the most recent valid time
                 const validLogs = hourlyData
-                    .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
-                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+                    .filter(log => log.time && log.time !== "00:00" && !log.time.includes('Invalid'))
+                    .sort((a, b) => new Date(b.original_time || b.time) - new Date(a.original_time || a.time));
+                
                 if (validLogs.length === 0) return "No valid hourly data";
+                
                 const lastLog = validLogs[0];
-                return parseTime(lastLog.Timestamp) || "Unknown time";
+                return lastLog.time || "Unknown time";
             }, [hourlyData, isLoading]);
+            
             const CustomTooltip = ({ active, payload, label }) => {
                 if (!active || !payload || payload.length === 0) return null;
+                
                 return (
                     <div className="chart-tooltip">
                         <p className="font-bold mb-1">{label}</p>
@@ -459,6 +468,7 @@
                     </div>
                 );
             };
+            
             if (loadError) {
                 return (
                     <div className="p-4 md:p-8 space-y-8 md:ml-64 min-h-screen flex items-center justify-center">
@@ -482,17 +492,19 @@
                     </div>
                 );
             }
+            
             if (isLoading && (!dailyData.production || dailyData.production.length === 0)) {
                 return (
                     <div className="p-4 md:p-8 space-y-8 md:ml-64 min-h-screen flex items-center justify-center">
                         <div className="text-center">
                             <div className="w-16 h-16 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-gray-400">Loading production data from Firestore...</p>
-                            <p className="text-xs text-gray-500 mt-2">Path: RP_Daily_Report</p>
+                            <p className="text-xs text-gray-500 mt-2">Path: artifacts/{APP_ID}/public/data</p>
                         </div>
                     </div>
                 );
             }
+            
             return (
                 <div className="p-4 md:p-6 space-y-6 min-h-screen pb-24 md:ml-64">
                     {/* Header */}
@@ -526,6 +538,7 @@
                             )}
                         </div>
                     </div>
+                    
                     {/* 1. Top Row: Key Production KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <StatCard 
@@ -553,6 +566,7 @@
                             loading={isLoading}
                         />
                     </div>
+                    
                     {/* 2. Charts Row */}
                     <div className="glass-panel p-4 md:p-6 rounded-2xl">
                         <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -578,11 +592,7 @@
                         </div>
                         <div className="h-80 md:h-96">
                             <ResponsiveContainer width="100%" height="100%">
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center h-full">
-                                        <div className="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                ) : chartData.length > 0 ? (
+                                {chartData.length > 0 ? (
                                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="gradPower" x1="0" y1="0" x2="0" y2="1">
@@ -652,6 +662,7 @@
                             </ResponsiveContainer>
                         </div>
                     </div>
+                    
                     {/* 3. Utilities & Consumption Grid (Today) */}
                     <div className="glass-panel p-4 md:p-6 rounded-2xl">
                         <h3 className="text-lg font-semibold mb-4 md:mb-6 flex items-center gap-2">
@@ -660,14 +671,14 @@
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
                             {[
-                                { param: 'Total Power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400' },
-                                { param: 'HAc Consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400' },
-                                { param: 'Natural Gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400' },
-                                { param: 'Caustic (NaOH)', label: 'Caustic', icon: 'Activity', color: 'text-pink-400' },
-                                { param: 'CMB Catalyst', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400' },
-                                { param: 'Equiv. CMB Recovery', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400' },
+                                { id: 'total_power', label: 'Total Power', icon: 'Zap', color: 'text-yellow-400' },
+                                { id: 'hac_consum', label: 'HAc Consum', icon: 'Droplets', color: 'text-cyan-400' },
+                                { id: 'nat_gas', label: 'Natural Gas', icon: 'Fuel', color: 'text-green-400' },
+                                { id: 'caustic', label: 'Caustic', icon: 'Activity', color: 'text-pink-400' },
+                                { id: 'cmb_cat', label: 'CMB Catalyst', icon: 'Factory', color: 'text-indigo-400' },
+                                { id: 'cmb_rec', label: 'CMB Recovery', icon: 'Activity', color: 'text-orange-400' },
                             ].map(metric => (
-                                <div key={metric.param} className="bg-plant-bg/50 p-3 sm:p-4 rounded-xl border border-plant-border hover:border-accent-primary/30 transition-colors">
+                                <div key={metric.id} className="bg-plant-bg/50 p-3 sm:p-4 rounded-xl border border-plant-border hover:border-accent-primary/30 transition-colors">
                                     <div className={`text-xs font-medium mb-1 ${metric.color} flex items-center gap-1`}>
                                         <Icon name={metric.icon} size={12} />
                                         {metric.label}
@@ -675,23 +686,24 @@
                                     <div className="text-xl font-bold text-white mb-0.5">
                                         {isLoading ? (
                                             <div className="skeleton w-16 h-6 rounded"></div>
-                                        ) : formatNumber(getVal('utility', metric.param))}
+                                        ) : formatNumber(getVal('utility', metric.id))}
                                     </div>
                                     <div className="text-xs">
                                         <span className="text-gray-500">Target:&nbsp;</span>
                                         <span className="text-gray-300 font-mono">
                                             {isLoading ? (
                                                 <div className="skeleton w-12 h-4 rounded inline-block"></div>
-                                            ) : formatNumber(getTarget('utility', metric.param))}
+                                            ) : formatNumber(getTarget('utility', metric.id))}
                                         </span>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
+                    
                     {/* Data Freshness Footer */}
                     <div className="text-center text-xs text-gray-500 mt-4 pt-4 border-t border-plant-border">
-                        <p>Data automatically refreshed from Emerson DeltaV system • Last update: {new Date().toLocaleString('en-US', { 
+                        <p>Data automatically refreshed from Firestore • Last update: {new Date().toLocaleString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
                             hour: '2-digit', 
@@ -701,12 +713,14 @@
                 </div>
             );
         };
+        
         const Sidebar = ({ activeTab, onTabChange, onLogout }) => {
             const items = [
                 { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
                 { id: 'logs', icon: 'Table2', label: 'Hourly Logs' },
                 { id: 'settings', icon: 'Settings', label: 'Settings' },
             ];
+            
             return (
                 <div className="w-64 border-r border-plant-border flex-col bg-plant-card fixed h-full z-10 hidden md:flex">
                     <div className="p-6 flex items-center gap-3">
@@ -744,19 +758,51 @@
                 </div>
             );
         };
+        
+        const BottomNav = ({ activeTab, onTabChange }) => {
+            const items = [
+                { id: 'dashboard', icon: 'LayoutDashboard', label: 'Dash' },
+                { id: 'logs', icon: 'Table2', label: 'Logs' },
+                { id: 'settings', icon: 'Settings', label: 'Setup' },
+            ];
+            
+            return (
+                <div className="fixed bottom-0 left-0 right-0 bg-plant-card border-t border-plant-border flex justify-around p-2 z-50 md:hidden safe-area-pb shadow-2xl">
+                    {items.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => onTabChange(item.id)}
+                            className={`flex flex-col items-center justify-center w-full py-2 rounded-lg transition-all ${
+                                activeTab === item.id 
+                                ? 'text-accent-primary scale-105' 
+                                : 'text-gray-500 hover:text-gray-300'
+                            }`}
+                        >
+                            <div className={`p-2 rounded-full ${activeTab === item.id ? 'bg-accent-primary/10' : ''}`}>
+                                <Icon name={item.icon} size={22} />
+                            </div>
+                            <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+        
         const HourlyLogs = ({ hourlyData, isLoading, onRefresh, loadError }) => {
             // Filter and sort hourly data for display
             const sortedLogs = useMemo(() => {
                 if (!hourlyData || hourlyData.length === 0) return [];
+                
                 return [...hourlyData]
-                    .filter(log => log.Timestamp && !log.Timestamp.includes('Invalid'))
-                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
-                    .map(log => ({
-                        time: parseTime(log.Timestamp),
-                        plant_power: log.Plant_Power || 0,
-                        stg_gen: log.STG_Power || 0
-                    }));
+                    .filter(log => log.time && log.time !== "00:00" && !log.time.includes('Invalid'))
+                    .sort((a, b) => {
+                        if (a.original_time && b.original_time) {
+                            return new Date(b.original_time) - new Date(a.original_time);
+                        }
+                        return b.time.localeCompare(a.time);
+                    });
             }, [hourlyData]);
+            
             if (loadError) {
                 return (
                     <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
@@ -778,15 +824,17 @@
                     </div>
                 );
             }
+            
             if (isLoading) {
                 return (
                     <div className="p-4 md:p-8 md:ml-64 text-center text-gray-500 mt-10 md:mt-20">
                         <div className="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                         <p>Loading hourly logs from Firestore...</p>
-                        <p className="text-xs text-gray-500 mt-2">Path: RP_Hourly_Trends</p>
+                        <p className="text-xs text-gray-500 mt-2">Path: artifacts/{APP_ID}/public/data/hourly_logs</p>
                     </div>
                 );
             }
+            
             return (
                 <div className="p-4 md:p-6 md:ml-64 min-h-screen">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -810,6 +858,7 @@
                             </button>
                         </div>
                     </div>
+                    
                     <div className="glass-panel rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -861,6 +910,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        
                         {sortedLogs.length > 0 && (
                             <div className="p-3 border-t border-plant-border bg-plant-bg/30 text-xs text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-2">
                                 <div>
@@ -872,6 +922,7 @@
                 </div>
             );
         };
+        
         // Main App Component
         const App = () => {
             // Safe Auth Logic
@@ -885,17 +936,16 @@
                     return !!sessionStorage.getItem('rpcm_authenticated');
                 } catch { return false; }
             });
+            
             const [activeTab, setActiveTab] = useState('dashboard');
             const [user, setUser] = useState(null);
             const [firebaseReady, setFirebaseReady] = useState(false);
             const [isLoading, setIsLoading] = useState(true);
             const [loadError, setLoadError] = useState(null);
             const [lastUpdate, setLastUpdate] = useState(null);
-            // Data State - initialize with proper structure
-            const [dailyData, setDailyData] = useState({
-                production: [],
-                utility: []
-            });
+            
+            // Data State
+            const [dailyData, setDailyData] = useState({ production: [], utility: [] });
             const [hourlyData, setHourlyData] = useState([]);
             
             useEffect(() => {
@@ -910,17 +960,22 @@
             
             useEffect(() => {
                 let authTimeout;
+                
                 if (!firebaseReady) return;
+                
                 console.log("Initializing Firebase authentication");
                 const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged } = window.firebaseModules;
                 try {
                     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
                     const auth = getAuth(app);
+                    
                     // Sign in anonymously
                     signInAnonymously(auth).catch(console.error);
+                    
                     const unsubscribe = onAuthStateChanged(auth, (u) => {
                         console.log("Auth state changed:", u ? "logged in" : "not logged in");
                         setUser(u);
+                        
                         // If authenticated but no user, try again after delay
                         if (!u) {
                             authTimeout = setTimeout(() => {
@@ -929,6 +984,7 @@
                             }, 5000);
                         }
                     });
+                    
                     return () => {
                         unsubscribe();
                         if (authTimeout) clearTimeout(authTimeout);
@@ -949,83 +1005,71 @@
                     setIsLoading(true);
                     return;
                 }
+                
                 console.log("Setting up Firestore listeners");
                 setLoadError(null);
                 setIsLoading(true);
+                
                 const { getFirestore, collection, doc, onSnapshot, query, orderBy } = window.firebaseModules;
                 const db = getFirestore();
                 let dailyUnsub, hourlyUnsub;
                 let initialLoad = true;
                 
+                const publicDataPath = `artifacts/${APP_ID}/public/data`;
+                
                 try {
                     // Set up subscription for daily summary data
-                    console.log("Subscribing to RP_Daily_Report collection");
+                    console.log("Subscribing to daily_summary collection");
                     dailyUnsub = onSnapshot(
-                        collection(db, "RP_Daily_Report"), 
+                        collection(db, publicDataPath, 'daily_summary'), 
                         (snapshot) => {
-                            console.log(`Received ${snapshot.size} documents for daily data`);
-                            // Transform data to match dashboard expectations
-                            const transformedData = {
-                                production: [],
-                                utility: []
-                            };
-                            
+                            console.log(`Received ${snapshot.size} documents for daily_summary`);
+                            const newData = { production: [], utility: [] };
                             snapshot.forEach(doc => {
                                 const data = doc.data();
-                                if (data.Parameter && data.Parameter.trim() !== '') {
-                                    // Map your fields to what the dashboard expects
-                                    const item = {
-                                        id: mapParameterToId(data.Parameter),
-                                        value: data.Actual,
-                                        target: data.Target,
-                                        unit: data.Unit,
-                                        category: getCategory(data.Parameter)
-                                    };
-                                    
-                                    // Add to appropriate category
-                                    if (item.category && transformedData[item.category]) {
-                                        transformedData[item.category].push(item);
-                                    }
+                                if (newData[data.category]) {
+                                    newData[data.category].push(data);
+                                } else {
+                                    console.warn("Unknown category:", data.category);
                                 }
                             });
                             
-                            setDailyData(transformedData);
-                            // Only set loading to false after first data load
-                            if (initialLoad && 
-                                (transformedData.production.length > 0 || transformedData.utility.length > 0)) {
-                                console.log("Initial daily data load complete");
-                                setIsLoading(false);
-                                initialLoad = false;
-                                setLastUpdate(new Date());
-                            }
+                            setDailyData(prev => {
+                                // Only set loading to false after first data load
+                                if (initialLoad && (newData.production.length > 0 || newData.utility.length > 0)) {
+                                    console.log("Initial data load complete");
+                                    setIsLoading(false);
+                                    initialLoad = false;
+                                    setLastUpdate(new Date());
+                                }
+                                return {...prev, ...newData};
+                            });
                         },
                         (error) => {
-                            console.error("Error fetching daily ", error);
+                            console.error("Error fetching daily summary:", error);
                             setLoadError({ message: "Error loading daily  " + error.message });
                             setIsLoading(false);
                         }
                     );
                     
                     // Set up subscription for hourly logs
-                    console.log("Subscribing to RP_Hourly_Trends collection");
+                    console.log("Subscribing to hourly_logs collection");
                     hourlyUnsub = onSnapshot(
-                        query(collection(db, "RP_Hourly_Trends"), orderBy('Timestamp', 'desc')),
+                        query(collection(db, publicDataPath, 'hourly_logs'), orderBy('time', 'desc')),
                         (snapshot) => {
-                            console.log(`Received ${snapshot.size} documents for hourly data`);
+                            console.log(`Received ${snapshot.size} documents for hourly_logs`);
                             const logs = [];
                             snapshot.forEach(doc => {
-                                const data = doc.data();
-                                if (data.Timestamp && !data.Timestamp.includes('Resize')) {
-                                    logs.push(data);
-                                }
+                                logs.push(doc.data());
                             });
                             setHourlyData(logs);
                         },
                         (error) => {
-                            console.error("Error fetching hourly ", error);
+                            console.error("Error fetching hourly logs:", error);
                             setLoadError({ message: "Error loading hourly data: " + error.message });
                         }
                     );
+                    
                 } catch (error) {
                     console.error("Error setting up Firestore listeners:", error);
                     setLoadError({ message: "Error setting up data listeners: " + error.message });
@@ -1084,6 +1128,8 @@
             return (
                 <div className="min-h-screen bg-plant-bg text-slate-200 selection:bg-accent-primary selection:text-white">
                     <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+                    <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+                    
                     {activeTab === 'dashboard' && (
                         <Dashboard 
                             dailyData={dailyData} 
@@ -1093,6 +1139,7 @@
                             loadError={loadError}
                         />
                     )}
+                    
                     {activeTab === 'logs' && (
                         <HourlyLogs
                             hourlyData={hourlyData}
@@ -1101,6 +1148,7 @@
                             loadError={loadError}
                         />
                     )}
+                    
                     {activeTab === 'settings' && <Settings user={user} db={null} />}
                 </div>
             );
