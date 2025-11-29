@@ -213,7 +213,7 @@
                 }
             }
 
-            // Calculate Percentage
+            // Calculate Percentage for Gauge
             let percentage = 0;
             if (title.includes('Availability')) {
                 percentage = numVal; 
@@ -255,16 +255,36 @@
                     {/* Right Side: Circular Gauge */}
                     <div className="relative w-24 h-24 flex items-center justify-center">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-plant-bg/50" />
-                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent"
-                                strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-                                className={`${strokeClass} transition-all duration-1000 ease-out`} />
+                            {/* Background Track */}
+                            <circle
+                                cx="48"
+                                cy="48"
+                                r={radius}
+                                stroke="currentColor"
+                                strokeWidth="8"
+                                fill="transparent"
+                                className="text-plant-bg/50"
+                            />
+                            {/* Progress Ring */}
+                            <circle
+                                cx="48"
+                                cy="48"
+                                r={radius}
+                                stroke="currentColor"
+                                strokeWidth="8"
+                                fill="transparent"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                className={`${strokeClass} transition-all duration-1000 ease-out`}
+                            />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-sm font-bold text-white/90">{percentage.toFixed(0)}%</span>
                         </div>
                     </div>
                     
+                    {/* Background Icon Decoration */}
                     <div className="absolute -bottom-4 -right-4 opacity-5 pointer-events-none">
                          <Icon name={icon} size={100} />
                     </div>
@@ -474,25 +494,51 @@
                     </div>
 
                     <div className="glass-panel p-4 rounded-xl">
-                        <h3 className="text-sm font-semibold text-gray-300 mb-4">Daily Consumption</h3>
+                        <h3 className="text-sm font-semibold text-gray-300 mb-4">Consumption Per Ton PTA</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {[
                                 {k:'Total Power', c:'text-yellow-400'}, {k:'HAc Consum', c:'text-cyan-400'},
                                 {k:'Natural Gas', c:'text-green-400'}, {k:'Caustic (NaOH)', c:'text-pink-400'},
                                 {k:'CMB Catalyst', c:'text-indigo-400'}, {k:'Equiv. CMB Recovery', c:'text-orange-400'}
-                            ].map(item => (
-                                <div key={item.k} className="bg-plant-bg/40 p-3 rounded-lg border border-white/5 relative overflow-hidden">
+                            ].map(item => {
+                                const actual = parseFloat(getValue(item.k));
+                                const target = parseFloat(getTarget(item.k));
+                                const unit = getUnit(item.k);
+                                
+                                const isRecovery = item.k.includes('Recovery');
+                                let isGood = true;
+                                let ArrowIcon = null;
+                                
+                                if (!isNaN(actual) && !isNaN(target) && target !== 0) {
+                                    if (isRecovery) {
+                                        isGood = actual >= target;
+                                        ArrowIcon = actual >= target ? '▲' : '▼';
+                                    } else {
+                                        isGood = actual <= target;
+                                        ArrowIcon = actual <= target ? '▼' : '▲';
+                                    }
+                                }
+
+                                return (
+                                <div key={item.k} className="bg-plant-bg/40 p-3 rounded-lg border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
                                     <div className={`text-[10px] uppercase font-bold truncate mb-1 ${item.c}`}>{item.k}</div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-lg font-bold text-white">{formatNumber(getValue(item.k))}</span>
-                                        <span className="text-[10px] text-gray-400">{getUnit(item.k)}</span>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-lg font-bold text-white">{formatNumber(actual)}</span>
+                                            <span className="text-[10px] text-gray-400">{unit}</span>
+                                        </div>
+                                        {ArrowIcon && (
+                                            <div className={`flex items-center justify-center w-5 h-5 rounded-full bg-opacity-20 ${isGood ? 'bg-status-ok text-status-ok' : 'bg-status-crit text-status-crit'}`}>
+                                                <span className="text-[10px] font-bold">{ArrowIcon}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
                                         <span className="text-[9px] text-gray-500 uppercase">Target</span>
-                                        <span className="text-[10px] text-gray-300 font-mono">{formatNumber(getTarget(item.k))}</span>
+                                        <span className="text-[10px] text-gray-300 font-mono">{formatNumber(target)}</span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 </div>
