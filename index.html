@@ -4,17 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RPCM Production Monitor</title>
-    <!-- iOS SETTINGS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Moniter">
-    <!-- ANDROID SETTINGS -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0f172a">
-    <!-- APP ICON -->
-    <link rel="apple-touch-icon" href="image_0.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="image_0.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="image_0.png">
+    
     <!-- APP ICONS & THEME -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -164,35 +154,51 @@
             return isNaN(num) ? '-' : num.toFixed(decimals);
         };
         
-        // --- SMART DATE PARSER ---
+        // --- SMART DATE PARSER (FIXED PRIORITY) ---
         const getEpoch = (timestamp) => {
             if (!timestamp) return 0;
+
             // 1. Firestore Timestamp Object
             if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
                 return timestamp.seconds * 1000;
             }
+
             let str = String(timestamp).trim();
-            // 2. Try standard parsing
-            let d = new Date(str);
-            if (!isNaN(d.getTime())) return d.getTime();
-            // 3. Custom Parsing
-            str = str.replace(/-/g, '/');
-            const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+            
+            // 2. Custom Parsing for "DD/MM/YYYY" (Prioritized over standard JS Date to fix 1/12 vs 12/1 ambiguity)
+            let cleanStr = str.replace(/-/g, '/');
+            // Regex captures: Day, Month, Year, Hour, Minute, (optional Second), (optional AM/PM)
+            const match = cleanStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)?$/i);
+            
             if (match) {
-                let [_, day, month, year, hours, minutes, ampm] = match;
+                let [_, day, month, year, hours, minutes, seconds, ampm] = match;
                 day = parseInt(day);
                 month = parseInt(month);
                 year = parseInt(year);
-                if (month > 12) { [day, month] = [month, day]; }
+                hours = parseInt(hours);
+                minutes = parseInt(minutes || 0);
+                
+                // Heuristic: If month > 12, it IS swapped (DD/MM/YYYY vs MM/DD/YYYY).
+                // However, user specifically mentioned "1/12" should be "Dec 1", 
+                // so we prioritize strict Day/Month interpretation unless Month is clearly > 12.
+                if (month > 12) { [day, month] = [month, day]; } 
+                
                 if (ampm) {
                     hours = parseInt(hours);
                     if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
                     if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
-                } else { hours = parseInt(hours); }
-                const d2 = new Date(year, month - 1, day, hours, parseInt(minutes || 0));
+                }
+                
+                // Create Date (Month is 0-indexed in JS)
+                const d2 = new Date(year, month - 1, day, hours, minutes);
                 if (!isNaN(d2.getTime())) return d2.getTime();
             }
-            return 0;
+
+            // 3. Fallback to standard parsing (for ISO strings 2025-12-01 etc)
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) return d.getTime();
+
+            return 0; // Truly invalid
         };
 
         const parseDateTime = (input) => {
@@ -223,7 +229,7 @@
                 }
             }
 
-            // Calculate Percentage for Gauge
+            // Calculate Percentage
             let percentage = 0;
             if (title.includes('Availability')) {
                 percentage = numVal; 
@@ -496,7 +502,7 @@
                                     <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                     <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={30} />
                                     <Tooltip contentStyle={{backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff'}} itemStyle={{fontSize: '12px'}} />
-                                    <Area type="monotone" dataKey="plant_power" name="Power Consumption" stroke="#ef4444" fill="url(#gradP)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#ef4444' }} />
+                                    <Area type="monotone" dataKey="plant_power" name="Plant Power" stroke="#ef4444" fill="url(#gradP)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#ef4444' }} />
                                     <Area type="monotone" dataKey="stg_gen" name="STG Generation" stroke="#10b981" fill="url(#gradS)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#10b981' }} />
                                 </AreaChart>
                             </ResponsiveContainer>
