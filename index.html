@@ -307,7 +307,6 @@
                                     <XAxis dataKey="time" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} interval="preserveStartEnd"/>
                                     <YAxis stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} width={32}/>
                                     <Tooltip contentStyle={{backgroundColor:'#1e293b',borderColor:'#334155',borderRadius:'8px',color:'#fff',fontSize:'12px'}}/>
-                                    <Legend content={() => null} />
                                     {chartColumns.map((col,i) => (
                                         <Area key={i} type="monotone" dataKey={col} stroke={chartColors[i%chartColors.length]} fill={`url(#grad${i})`} strokeWidth={2} dot={false}/>
                                     ))}
