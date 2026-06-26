@@ -4,130 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RPCM Production Monitor</title>
-    
-    <!-- APP ICONS & THEME -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
     
-    <!-- SCRIPTS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'plant-bg': '#0f172a',
-                        'plant-card': '#1e293b',
-                        'plant-border': '#334155',
-                        'accent-primary': '#3b82f6', 
-                        'accent-secondary': '#8b5cf6',
-                        'status-ok': '#10b981',
-                        'status-warn': '#f59e0b',
-                        'status-crit': '#ef4444',
+                        'plant-bg': '#0f172a', 'plant-card': '#1e293b', 'plant-border': '#334155',
+                        'accent-primary': '#3b82f6', 'accent-secondary': '#8b5cf6',
+                        'status-ok': '#10b981', 'status-warn': '#f59e0b', 'status-crit': '#ef4444',
                     },
-                    boxShadow: {
-                        'glow': '0 0 20px -5px rgba(59, 130, 246, 0.5)',
-                        'nav': '0 -4px 20px rgba(0,0,0,0.3)',
-                    }
+                    boxShadow: { 'glow': '0 0 20px -5px rgba(59, 130, 246, 0.5)', 'nav': '0 -4px 20px rgba(0,0,0,0.3)' }
                 }
             }
         }
     </script>
-    
-    <!-- REACT ECOSYSTEM -->
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <!-- Updated Recharts to cdnjs and explicitly newer version -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.3/Recharts.min.js"></script>
     
-    <!-- FIREBASE MODULES -->
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        
-        // Expose to window so Babel script can see them
-        window.firebaseModules = { 
-            initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged,
-            getFirestore, collection, doc, onSnapshot, query, orderBy
-        };
-        
-        // Signal that modules are ready
+        window.firebaseModules = { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, onSnapshot, query, orderBy };
         window.firebaseModulesLoaded = true;
         window.dispatchEvent(new Event('firebase-modules-ready'));
-        console.log("Firebase Modules Loaded");
     </script>
 
     <style>
-        body { 
-            background-color: #0f172a; 
-            color: #f1f5f9; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* Glassmorphism Utilities */
-        .glass-panel { 
-            background: rgba(30, 41, 59, 0.6); 
-            backdrop-filter: blur(16px); 
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-        }
-        
-        .glass-nav {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        /* Custom Scrollbar */
+        body { background-color: #0f172a; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .glass-panel { background: rgba(30,41,59,0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+        .glass-nav { background: rgba(15,23,42,0.85); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.08); }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        
-        /* Mobile Safe Areas */
-        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-        .safe-pt { padding-top: env(safe-area-inset-top); }
-        
-        /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-enter { animation: fadeIn 0.4s ease-out forwards; }
-        
-        /* Checkbox Customization */
-        .custom-checkbox {
-            accent-color: #3b82f6;
-            width: 1rem;
-            height: 1rem;
-            cursor: pointer;
-        }
+        .custom-checkbox { accent-color: #3b82f6; width: 1rem; height: 1rem; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="root"></div>
-    
+
     <script type="text/babel">
-        // --- 0. SAFETY CHECKS & GLOBALS ---
-        if (!window.React || !window.ReactDOM) {
-            document.body.innerHTML = '<div style="color:red; padding:20px; font-weight:bold;">Critical Error: React libraries failed to load. Please check your internet connection.</div>';
-            throw new Error("React not loaded");
-        }
-        
         const { useState, useEffect, useMemo, Component } = React;
         const ReactDOMClient = ReactDOM;
-        
-        // Safe Recharts Loading
-        const RechartsLib = window.Recharts || { 
-            LineChart: () => null, AreaChart: () => null, Area: () => null, 
-            XAxis: () => null, YAxis: () => null, CartesianGrid: () => null, 
-            Tooltip: () => null, ResponsiveContainer: ({children}) => <div>{children}</div>, Legend: () => null 
-        };
-        const { LineChart, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } = RechartsLib;
-        
-        // --- 1. CONFIGURATION ---
+        const RechartsLib = window.Recharts || { LineChart: ()=>null, AreaChart: ()=>null, Area: ()=>null, XAxis: ()=>null, YAxis: ()=>null, CartesianGrid: ()=>null, Tooltip: ()=>null, ResponsiveContainer: ({children})=><div>{children}</div>, Legend: ()=>null };
+        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = RechartsLib;
+
+        // === CONFIG ===
         const firebaseConfig = {
             apiKey: "AIzaSyDjaJHzh_EzVbN_WQvamcL9VnI92R02d7w",
             authDomain: "dashboard-fced7.firebaseapp.com",
@@ -136,51 +67,38 @@
             messagingSenderId: "893864259222",
             appId: "1:893864259222:web:7b82f4dd617f36df661cb7"
         };
-        
-        // GLOBAL CONSUMPTION ITEMS DEFINITION
-        const consumptionItems = [
-            {k:'Total Power', c:'text-yellow-400'}, {k:'HAc Consum', c:'text-cyan-400'},
-            {k:'Natural Gas', c:'text-green-400'}, {k:'Caustic (NaOH)', c:'text-pink-400'},
-            {k:'CMB Catalyst', c:'text-indigo-400'}, {k:'Equiv. CMB Recovery', c:'text-orange-400'}
-        ];
 
-        // --- 2. HELPER FUNCTIONS ---
+        // Category icon & color mapping (auto-selects based on category name keywords)
+        const categoryStyle = (cat) => {
+            const c = (cat||'').toLowerCase();
+            if (c.includes('production') && !c.includes('usage')) return { icon: 'Factory', color: 'text-blue-400', gridCols: 'md:grid-cols-3' };
+            if (c.includes('flow')) return { icon: 'Droplets', color: 'text-cyan-400', gridCols: 'md:grid-cols-2' };
+            if (c.includes('usage') || c.includes('consumption')) return { icon: 'Zap', color: 'text-yellow-400', gridCols: 'md:grid-cols-4' };
+            return { icon: 'Activity', color: 'text-gray-400', gridCols: 'md:grid-cols-3' };
+        };
+
+        // === HELPERS ===
         const formatNumber = (value, decimals = 2) => {
             if (value === null || value === undefined || value === '') return '-';
             let num = parseFloat(value);
             return isNaN(num) ? '-' : num.toFixed(decimals);
         };
-        
+
         const getEpoch = (timestamp) => {
             if (!timestamp) return 0;
-            // 1. Firestore Timestamp Object
-            if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) {
-                return timestamp.seconds * 1000;
-            }
+            if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp) return timestamp.seconds * 1000;
             let str = String(timestamp).trim();
-            // 2. Custom Parsing for "DD/MM/YYYY" (Prioritized)
             let cleanStr = str.replace(/-/g, '/');
             const match = cleanStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)?$/i);
-            
             if (match) {
-                let [_, day, month, year, hours, minutes, seconds, ampm] = match;
-                day = parseInt(day);
-                month = parseInt(month);
-                year = parseInt(year);
-                hours = parseInt(hours || 0);
-                minutes = parseInt(minutes || 0);
-                
-                // Heuristic: If month > 12, it IS swapped (DD/MM/YYYY vs MM/DD/YYYY).
-                if (month > 12) { [day, month] = [month, day]; } 
-                
-                if (ampm) {
-                    if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
-                    if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
-                }
-                const d2 = new Date(year, month - 1, day, hours, minutes);
-                if (!isNaN(d2.getTime())) return d2.getTime();
+                let [_, day, month, year, hours, minutes, sec, ampm] = match;
+                day = parseInt(day); month = parseInt(month); year = parseInt(year);
+                hours = parseInt(hours||0); minutes = parseInt(minutes||0);
+                if (month > 12) [day, month] = [month, day];
+                if (ampm) { if (ampm.toUpperCase()==='PM'&&hours<12) hours+=12; if (ampm.toUpperCase()==='AM'&&hours===12) hours=0; }
+                const d = new Date(year, month-1, day, hours, minutes);
+                if (!isNaN(d.getTime())) return d.getTime();
             }
-            // 3. Fallback
             let d = new Date(str);
             if (!isNaN(d.getTime())) return d.getTime();
             return 0;
@@ -189,135 +107,90 @@
         const parseDateTime = (input) => {
             const epoch = getEpoch(input);
             if (epoch === 0) return String(input);
-            return new Date(epoch).toLocaleString('en-US', {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
-            });
+            return new Date(epoch).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
         };
 
-        // --- 3. COMPONENTS ---
+        // === ICONS ===
+        const icons = {
+            Factory: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 22h20V2l-7 9V7l-6 9V8L2 22z"/></svg>,
+            Zap: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Activity: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+            Droplets: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>,
+            LayoutDashboard: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+            Table2: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>,
+            LogOut: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+            RefreshCw: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+            Eye: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+            EyeOff: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+            ArrowUp: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
+            ArrowDown: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        };
+        const I = ({n,s=20,c=''}) => <span className={c}>{icons[n] || icons.Activity}</span>;
 
-        function Icon({ name, size = 20, className = "" }) {
-            const icons = {
-                Factory: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 22h20V2l-7 9V7l-6 9V8L2 22z"/></svg>,
-                Zap: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>,
-                Activity: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
-                Droplets: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>,
-                LayoutDashboard: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
-                Table2: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>,
-                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
-                RefreshCw: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
-                Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-                EyeOff: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
-                ArrowUp: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 19V5M5 12l7-7 7 7"/></svg>,
-                ArrowDown: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            };
-            return icons[name] || icons.Activity;
-        }
-
+        // === STAT CARD (unchanged) ===
         function StatCard({ title, value, unit, target, icon, decimals }) {
             let statusColor = 'text-gray-400';
-            const numVal = parseFloat(value);
-            const numTgt = parseFloat(target);
-            
+            const numVal = parseFloat(value), numTgt = parseFloat(target);
             if (!isNaN(numVal) && !isNaN(numTgt)) {
                 const higherIsBetter = title.includes('Availability') || title.includes('Recovery');
-                if (higherIsBetter) {
-                    if (numVal >= numTgt) statusColor = 'text-status-ok';
-                    else if (numVal >= numTgt * 0.9) statusColor = 'text-status-warn';
-                    else statusColor = 'text-status-crit';
-                } else {
-                    if (numVal <= numTgt) statusColor = 'text-status-ok';
-                    else if (numVal <= numTgt * 1.1) statusColor = 'text-status-warn';
-                    else statusColor = 'text-status-crit';
-                }
+                if (higherIsBetter) { if (numVal>=numTgt) statusColor='text-status-ok'; else if (numVal>=numTgt*0.9) statusColor='text-status-warn'; else statusColor='text-status-crit'; }
+                else { if (numVal<=numTgt) statusColor='text-status-ok'; else if (numVal<=numTgt*1.1) statusColor='text-status-warn'; else statusColor='text-status-crit'; }
             }
-
-            let percentage = 0;
-            if (title.includes('Availability')) {
-                percentage = numVal; 
-            } else if (numTgt > 0) {
-                percentage = (numVal / numTgt) * 100;
-            }
-            const visualPct = Math.min(Math.max(percentage, 0), 100);
-            
-            const radius = 36;
-            const circumference = 2 * Math.PI * radius;
-            const offset = circumference - (visualPct / 100) * circumference;
-            
-            let strokeClass = 'stroke-gray-500';
-            if (statusColor.includes('ok')) strokeClass = 'stroke-status-ok';
-            if (statusColor.includes('warn')) strokeClass = 'stroke-status-warn';
-            if (statusColor.includes('crit')) strokeClass = 'stroke-status-crit';
-            
+            let pct = title.includes('Availability') ? numVal : (numTgt > 0 ? (numVal/numTgt)*100 : 0);
+            const vp = Math.min(Math.max(pct,0),100);
+            const radius=36, circ=2*Math.PI*radius, off=circ-(vp/100)*circ;
+            let sc='stroke-gray-500';
+            if (statusColor.includes('ok')) sc='stroke-status-ok';
+            if (statusColor.includes('warn')) sc='stroke-status-warn';
+            if (statusColor.includes('crit')) sc='stroke-status-crit';
             return (
-                <div className="bg-plant-card border border-plant-border rounded-xl p-5 relative overflow-hidden group flex items-center justify-between shadow-lg">
-                    <div className="z-10 flex flex-col justify-between h-full">
+                <div className="bg-plant-card border border-plant-border rounded-xl p-5 flex items-center justify-between shadow-lg">
+                    <div>
                         <div className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-2 uppercase tracking-wider">
-                            <Icon name={icon} size={14} className="text-accent-primary" />
-                            {title}
+                            <I n={icon} s={14} c="text-accent-primary" /> {title}
                         </div>
                         <div className="flex items-baseline gap-1 mt-2">
-                            <span className="text-3xl font-bold text-white tracking-tight">{formatNumber(value, decimals)}</span>
+                            <span className="text-3xl font-bold text-white">{formatNumber(value, decimals)}</span>
                             {unit && <span className="text-sm text-gray-500">{unit}</span>}
                         </div>
-                        {target !== undefined && target !== null && (
-                            <div className="mt-2 text-xs text-gray-500">
-                                Target: <span className="text-gray-300 font-mono">{formatNumber(target, decimals)}</span>
-                            </div>
-                        )}
+                        {target!=null&&target!==undefined&&<div className="mt-2 text-xs text-gray-500">Target: <span className="text-gray-300 font-mono">{formatNumber(target, decimals)}</span></div>}
                     </div>
                     <div className="relative w-24 h-24 flex items-center justify-center">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-plant-bg/50" />
-                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent"
-                                strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-                                className={`${strokeClass} transition-all duration-1000 ease-out`} />
+                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-plant-bg/50"/>
+                            <circle cx="48" cy="48" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round" className={`${sc} transition-all duration-1000 ease-out`}/>
                         </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold text-white/90">{percentage.toFixed(0)}%</span>
-                        </div>
-                    </div>
-                    <div className="absolute -bottom-4 -right-4 opacity-5 pointer-events-none">
-                         <Icon name={icon} size={100} />
+                        <div className="absolute inset-0 flex items-center justify-center"><span className="text-sm font-bold text-white/90">{vp.toFixed(0)}%</span></div>
                     </div>
                 </div>
             );
         }
 
+        // === AUTH GATE ===
         function PasswordGate({ onLogin }) {
-            const [password, setPassword] = useState('');
-            const [showPwd, setShowPwd] = useState(false);
-            const [rememberMe, setRememberMe] = useState(false);
-            const [error, setError] = useState(false);
-            
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (password === 'rpcm2024') onLogin(rememberMe);
-                else { setError(true); setPassword(''); }
+            const [pw, setPw] = useState(''); const [show, setShow] = useState(false);
+            const [rem, setRem] = useState(false); const [err, setErr] = useState(false);
+            const submit = (e) => { e.preventDefault();
+                if (pw === 'rpcm2024') onLogin(rem);
+                else { setErr(true); setPw(''); }
             };
-            
             return (
                 <div className="min-h-screen flex items-center justify-center bg-plant-bg p-6">
                     <div className="glass-panel p-8 rounded-2xl w-full max-w-sm animate-enter">
-                        <div className="w-16 h-16 bg-accent-primary/20 rounded-2xl flex items-center justify-center text-accent-primary mb-6 mx-auto">
-                            <Icon name="Factory" size={32} />
-                        </div>
+                        <div className="w-16 h-16 bg-accent-primary/20 rounded-2xl flex items-center justify-center text-accent-primary mb-6 mx-auto"><I n="Factory" s={32}/></div>
                         <h1 className="text-xl font-bold text-center mb-1 text-white">RPCM Monitor</h1>
                         <p className="text-gray-400 text-center mb-6 text-sm">Restricted Access</p>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={submit} className="space-y-4">
                             <div className="relative">
-                                <input type={showPwd ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Access Code"
-                                    className="w-full bg-plant-bg border border-plant-border rounded-xl px-4 py-3 text-white focus:border-accent-primary focus:outline-none transition-colors text-center text-lg" />
-                                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-3.5 text-gray-500">
-                                    <Icon name={showPwd ? "EyeOff" : "Eye"} size={18} />
-                                </button>
+                                <input type={show?"text":"password"} value={pw} onChange={e=>setPw(e.target.value)} placeholder="Access Code"
+                                    className="w-full bg-plant-bg border border-plant-border rounded-xl px-4 py-3 text-white focus:border-accent-primary focus:outline-none text-center text-lg"/>
+                                <button type="button" onClick={()=>setShow(!show)} className="absolute right-3 top-3.5 text-gray-500"><I n={show?"EyeOff":"Eye"} s={18}/></button>
                             </div>
-                            <div className="flex items-center gap-2 justify-center mb-2">
-                                <input type="checkbox" id="remember" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="custom-checkbox rounded border-gray-600 bg-plant-bg text-accent-primary focus:ring-accent-primary" />
-                                <label htmlFor="remember" className="text-xs text-gray-400 select-none cursor-pointer">Remember me for 30 days</label>
+                            <div className="flex items-center gap-2 justify-center">
+                                <input type="checkbox" id="rem" checked={rem} onChange={e=>setRem(e.target.checked)} className="custom-checkbox"/>
+                                <label htmlFor="rem" className="text-xs text-gray-400 cursor-pointer">Remember for 30 days</label>
                             </div>
-                            {error && <p className="text-status-crit text-xs text-center">Invalid credential</p>}
+                            {err && <p className="text-status-crit text-xs text-center">Invalid credential</p>}
                             <button className="w-full bg-accent-primary text-white font-bold py-3 rounded-xl shadow-glow hover:bg-blue-600 transition-all">Enter Dashboard</button>
                         </form>
                     </div>
@@ -325,70 +198,142 @@
             );
         }
 
-        function HourlyLogs({ hourlyData, isLoading, onRefresh }) {
-            const sortedLogs = useMemo(() => {
-                if (!hourlyData) return [];
-                const logs = [...hourlyData].map(log => ({
-                    ...log,
-                    epoch: getEpoch(log.Timestamp),
-                    timeStr: parseDateTime(log.Timestamp),
-                    bc101a: log.BC101A || 0,
-                    bc101b: log.BC101B || 0
-                }));
-                return logs.sort((a, b) => b.epoch - a.epoch);
+        // === DYNAMIC DASHBOARD ===
+        function Dashboard({ parameters, categories, hourlyData, lastUpdated, isLoading, onRefresh }) {
+            if (!parameters || Object.keys(parameters).length === 0) return (
+                <div className="h-[60vh] flex flex-col items-center justify-center text-gray-500">
+                    <div className="w-10 h-10 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mb-4"/>
+                    <p>Waiting for data...</p>
+                </div>
+            );
+
+            // Build category sections from parameters
+            const paramList = Object.values(parameters).sort((a,b) => (a.displayOrder||0) - (b.displayOrder||0));
+            const sections = {};
+            const catOrder = categories || [];
+            paramList.forEach(p => {
+                const cat = p.Category || 'General';
+                if (!sections[cat]) sections[cat] = [];
+                sections[cat].push(p);
+            });
+
+            // Hourly chart data (dynamic columns)
+            const chartData = useMemo(() => {
+                if (!hourlyData || hourlyData.length===0) return [];
+                const colNames = hourlyData.length>0 ? Object.keys(hourlyData[0]).filter(k => k!=='Timestamp' && k!=='doc_id') : [];
+                return hourlyData.map(row => {
+                    const obj = { time: parseDateTime(row.Timestamp) };
+                    colNames.forEach(cn => { obj[cn] = row[cn] || 0; });
+                    return obj;
+                }).filter(r => getEpoch(r.time)>0).slice(-24);
             }, [hourlyData]);
 
-            if (isLoading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+            const chartColumns = chartData.length>0 ? Object.keys(chartData[0]).filter(k => k!=='time') : [];
+            const chartColors = ['#ef4444', '#10b981', '#d946ef', '#06b6d4', '#f59e0b', '#3b82f6'];
 
             return (
-                <div className="pb-24 animate-enter">
-                    <div className="flex justify-between items-center mb-4 px-1">
-                        <h2 className="text-lg font-bold text-white">Hourly Logs</h2>
-                        <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-accent-primary"><Icon name="RefreshCw" size={18} /></button>
+                <div className="space-y-6 pb-24 animate-enter">
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <h1 className="text-xl font-bold text-white">Daily Overview</h1>
+                            <p className="text-xs text-status-ok flex items-center gap-1 mt-1">
+                                <span className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></span>
+                                Last Updated: <span className="font-mono text-white ml-1">{lastUpdated || 'Syncing...'}</span>
+                            </p>
+                        </div>
+                        <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-gray-300"><I n="RefreshCw" s={20}/></button>
                     </div>
-                    <div className="md:hidden space-y-3">
-                        {sortedLogs.map((row, i) => (
-                            <div key={i} className="glass-panel p-4 rounded-xl">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1 h-10 rounded-full bg-accent-primary"></div>
-                                        <div>
-                                            <div className="font-mono text-white text-sm font-medium">{row.timeStr}</div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-sm text-gray-300">P: <span className="text-white font-bold">{formatNumber(row.Plant_Power)}</span></div>
-                                        <div className="text-sm text-gray-400">S: <span className="text-blue-400">{formatNumber(row.STG_Power)}</span></div>
-                                    </div>
+
+                    {/* Category sections */}
+                    {(categories||['General']).map(cat => {
+                        const items = sections[cat];
+                        if (!items || items.length===0) return null;
+                        const style = categoryStyle(cat);
+                        return (
+                            <div key={cat}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <I n={style.icon} s={16} c={style.color}/>
+                                    <h2 className={`text-sm font-semibold ${style.color} uppercase tracking-wider`}>{cat}</h2>
                                 </div>
-                                <div className="flex justify-end gap-4 text-xs pt-2 border-t border-white/5">
-                                    <div className="text-purple-400">A: {formatNumber(row.bc101a)}</div>
-                                    <div className="text-cyan-400">B: {formatNumber(row.bc101b)}</div>
+                                <div className={`grid grid-cols-1 ${style.gridCols} gap-3`}>
+                                    {items.map((p,i) => (
+                                        <StatCard key={i}
+                                            title={p.Parameter}
+                                            value={p.Actual}
+                                            target={p.Target}
+                                            unit={p.Unit}
+                                            icon={style.icon}
+                                            decimals={p.Unit&&p.Unit.toLowerCase().includes('tonne')?0:p.Unit&&p.Unit.toLowerCase().includes('%')?2:2}
+                                        />
+                                    ))}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })}
+
+                    {/* Hourly Chart (if data exists) */}
+                    {chartData.length > 0 && (
+                        <div className="glass-panel p-4 rounded-xl">
+                            <h3 className="text-sm font-semibold text-gray-300 mb-4">Hourly Trends</h3>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer>
+                                    <AreaChart data={chartData}>
+                                        {chartColumns.map((col,i) => (
+                                            <defs key={i}>
+                                                <linearGradient id={`grad${i}`} x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor={chartColors[i%chartColors.length]} stopOpacity={0.4}/>
+                                                    <stop offset="95%" stopColor={chartColors[i%chartColors.length]} stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                        ))}
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false}/>
+                                        <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false}/>
+                                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={40}/>
+                                        <Tooltip contentStyle={{backgroundColor:'#1e293b',borderColor:'#334155',borderRadius:'8px',color:'#fff'}}/>
+                                        {chartColumns.map((col,i) => (
+                                            <Area key={i} type="monotone" dataKey={col} stroke={chartColors[i%chartColors.length]} fill={`url(#grad${i})`} strokeWidth={2} dot={false}/>
+                                        ))}
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // === HOURLY LOGS (dynamic) ===
+        function HourlyLogs({ hourlyData, isLoading, onRefresh }) {
+            const sortedLogs = useMemo(() => {
+                if (!hourlyData || hourlyData.length===0) return [];
+                return hourlyData.map(log => ({...log, epoch: getEpoch(log.Timestamp), timeStr: parseDateTime(log.Timestamp)}))
+                    .sort((a,b) => b.epoch - a.epoch);
+            }, [hourlyData]);
+            if (isLoading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+            if (sortedLogs.length === 0) return (
+                <div className="p-8 text-center">
+                    <I n="Activity" s={48} c="text-gray-600 mx-auto mb-4"/>
+                    <p className="text-gray-500">No hourly data available</p>
+                    <p className="text-xs text-gray-600 mt-2">Data will appear when PI Datalink is connected</p>
+                </div>
+            );
+            const logKeys = sortedLogs.length>0 ? Object.keys(sortedLogs[0]).filter(k => k!=='epoch' && k!=='timeStr' && k!=='doc_id') : [];
+            return (
+                <div className="pb-24 animate-enter">
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold text-white">Hourly Logs</h2><button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-accent-primary"><I n="RefreshCw" s={18}/></button></div>
                     <div className="hidden md:block glass-panel rounded-xl overflow-hidden">
                         <table className="w-full text-sm">
                             <thead className="bg-plant-bg/50 text-gray-400 uppercase text-xs">
                                 <tr>
-                                    <th className="px-6 py-3 text-left">Date & Time</th>
-                                    <th className="px-6 py-3 text-right">Plant Power</th>
-                                    <th className="px-6 py-3 text-right">STG Gen</th>
-                                    <th className="px-6 py-3 text-right text-purple-400">BC101A</th>
-                                    <th className="px-6 py-3 text-right text-cyan-400">BC101B</th>
+                                    <th className="px-6 py-3 text-left">Time</th>
+                                    {logKeys.map(k=><th key={k} className="px-6 py-3 text-right">{k.replace(/_/g,' ')}</th>)}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-plant-border">
-                                {sortedLogs.map((row, i) => (
-                                    <tr key={i} className="hover:bg-white/5">
-                                        <td className="px-6 py-3 font-mono text-accent-primary">{row.timeStr}</td>
-                                        <td className="px-6 py-3 text-right font-medium">{formatNumber(row.Plant_Power)}</td>
-                                        <td className="px-6 py-3 text-right text-blue-400">{formatNumber(row.STG_Power)}</td>
-                                        <td className="px-6 py-3 text-right">{formatNumber(row.bc101a)}</td>
-                                        <td className="px-6 py-3 text-right">{formatNumber(row.bc101b)}</td>
-                                    </tr>
-                                ))}
+                                {sortedLogs.map((row,i)=><tr key={i} className="hover:bg-white/5">
+                                    <td className="px-6 py-3 font-mono text-accent-primary">{row.timeStr}</td>
+                                    {logKeys.map(k=><td key={k} className="px-6 py-3 text-right font-medium">{formatNumber(row[k])}</td>)}
+                                </tr>)}
                             </tbody>
                         </table>
                     </div>
@@ -396,373 +341,114 @@
             );
         }
 
-        function Dashboard({ dailyData, hourlyData, isLoading, onRefresh }) {
-            const chartData = useMemo(() => {
-                if (!hourlyData || hourlyData.length === 0) return [];
-                const processed = hourlyData.map(log => ({
-                    time: parseDateTime(log.Timestamp),
-                    plant_power: log.Plant_Power || 0,
-                    stg_gen: log.STG_Power || 0,
-                    bc101a: log.BC101A || 0,
-                    bc101b: log.BC101B || 0,
-                    epoch: getEpoch(log.Timestamp)
-                })).filter(l => l.epoch > 0);
-                processed.sort((a, b) => b.epoch - a.epoch);
-                const recent24 = processed.slice(0, 24);
-                return recent24.reverse();
-            }, [hourlyData]);
-
-            const getDataItem = (key) => {
-                if (!dailyData) return null;
-                if (dailyData[key] !== undefined) return dailyData[key];
-                const keyMap = {
-                    'Caustic (NaOH)': 'Caustic_NaOH', 'Caustic_(NaOH)': 'Caustic_NaOH',
-                    'Equiv. CMB Recovery': 'Equiv_CMB_Recovery', 'Equiv._CMB_Recovery': 'Equiv_CMB_Recovery',
-                    'CMB Catalyst': 'CMB_Catalyst', 'HAc Consum': 'HAc_Consum',
-                    'Total Power': 'Total_Power', 'Natural Gas': 'Natural_Gas',
-                    'BC101A': 'BC101A', 'BC101B': 'BC101B',
-                    'PX BD105 Flow': 'PX_BD105_Flow', 'PTA In Feed': 'PTA_In_Feed'
-                };
-                if (keyMap[key] && dailyData[keyMap[key]] !== undefined) return dailyData[keyMap[key]];
-                const underscoreKey = key.replace(/ /g, '_');
-                if (dailyData[underscoreKey] !== undefined) return dailyData[underscoreKey];
-                return null;
-            };
-
-            const getValue = (key) => getDataItem(key)?.Actual ?? 0;
-            const getTarget = (key) => getDataItem(key)?.Target ?? 0;
-            const getUnit = (key) => getDataItem(key)?.Unit ?? '';
-
-            const lastUpdated = useMemo(() => {
-                if (dailyData.Last_Updated) return parseDateTime(dailyData.Last_Updated);
-                if (dailyData.last_updated) return parseDateTime(dailyData.last_updated);
-                if (hourlyData && hourlyData.length > 0) {
-                     let maxEpoch = 0; let latestTS = null;
-                     hourlyData.forEach(item => {
-                         const ep = getEpoch(item.Timestamp);
-                         if (ep > maxEpoch) { maxEpoch = ep; latestTS = item.Timestamp; }
-                     });
-                     if (latestTS) return parseDateTime(latestTS);
-                }
-                return 'Syncing...';
-            }, [dailyData, hourlyData]);
-
-            if (isLoading) return (
-                <div className="h-[60vh] flex flex-col items-center justify-center text-gray-500">
-                    <div className="w-10 h-10 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p>Updating Data...</p>
-                </div>
-            );
-
-            return (
-                <div className="space-y-4 pb-24 animate-enter">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <h1 className="text-xl font-bold text-white">Daily Overview</h1>
-                            <p className="text-xs text-status-ok flex items-center gap-1 mt-1">
-                                <span className="w-2 h-2 rounded-full bg-status-ok animate-pulse"></span>
-                                Last Updated: <span className="font-mono text-white ml-1">{lastUpdated}</span>
-                            </p>
-                        </div>
-                        <button onClick={onRefresh} className="p-2 bg-plant-card border border-plant-border rounded-lg text-gray-300"><Icon name="RefreshCw" size={20} /></button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <StatCard title="CTA Production" value={getValue('CTA Production')} target={getTarget('CTA Production')} unit="T" icon="Factory" decimals={0} />
-                        <StatCard title="PTA Production" value={getValue('PTA Production')} target={getTarget('PTA Production')} unit="T" icon="Factory" decimals={0} />
-                        <StatCard title="Availability" value={getValue('Availability')} target={getTarget('Availability')} unit="%" icon="Activity" />
-                        <StatCard title="PX BD105 Flow" value={getValue('PX BD105 Flow')} target={getTarget('PX BD105 Flow')} unit={getUnit('PX BD105 Flow')} icon="Droplets" />
-                        <StatCard title="PTA In Feed" value={getValue('PTA In Feed')} target={getTarget('PTA In Feed')} unit={getUnit('PTA In Feed')} icon="Factory" />
-                    </div>
-
-                    <div className="glass-panel p-4 rounded-xl">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-semibold text-gray-300">Plant Power(Mw)</h3>
-                            <div className="flex items-center gap-4 text-xs flex-wrap">
-                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#10b981]"></span><span className="text-gray-400">Gen</span></div>
-                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#ef4444]"></span><span className="text-gray-400">Power</span></div>
-                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#d946ef]"></span><span className="text-gray-400">BC101A</span></div>
-                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#06b6d4]"></span><span className="text-gray-400">BC101B</span></div>
-                            </div>
-                        </div>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="gradP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                                        <linearGradient id="gradS" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
-                                        <linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#d946ef" stopOpacity={0.4}/><stop offset="95%" stopColor="#d946ef" stopOpacity={0}/></linearGradient>
-                                        <linearGradient id="gradB" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/><stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/></linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                    <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={30} />
-                                    <Tooltip contentStyle={{backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff'}} itemStyle={{fontSize: '12px'}} />
-                                    <Area type="monotone" dataKey="plant_power" name="PlantPower" stroke="#ef4444" fill="url(#gradP)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#ef4444' }} />
-                                    <Area type="monotone" dataKey="stg_gen" name="STG_Gen" stroke="#10b981" fill="url(#gradS)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#10b981' }} />
-                                    <Area type="monotone" dataKey="bc101a" name="BC101A" stroke="#d946ef" fill="url(#gradA)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#d946ef' }} />
-                                    <Area type="monotone" dataKey="bc101b" name="BC101B" stroke="#06b6d4" fill="url(#gradB)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#06b6d4' }} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-4 rounded-xl">
-                        <h3 className="text-sm font-semibold text-gray-300 mb-4">Consumption Per Ton PTA</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {consumptionItems.map(item => {
-                                const actual = parseFloat(getValue(item.k));
-                                const target = parseFloat(getTarget(item.k));
-                                const unit = getUnit(item.k);
-                                
-                                const isRecovery = item.k.includes('Recovery');
-                                let isGood = true;
-                                let ArrowIcon = null;
-                                
-                                if (!isNaN(actual) && !isNaN(target) && target !== 0) {
-                                    if (isRecovery) {
-                                        isGood = actual >= target;
-                                        ArrowIcon = actual >= target ? "ArrowUp" : "ArrowDown";
-                                    } else {
-                                        isGood = actual <= target;
-                                        ArrowIcon = actual <= target ? "ArrowDown" : "ArrowUp";
-                                    }
-                                }
-
-                                return (
-                                <div key={item.k} className="bg-plant-bg/40 p-3 rounded-lg border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
-                                    <div className={`text-[10px] uppercase font-bold truncate mb-1 ${item.c}`}>{item.k}</div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-lg font-bold text-white">{formatNumber(actual)}</span>
-                                            <span className="text-[10px] text-gray-400">{unit}</span>
-                                        </div>
-                                        {ArrowIcon && (
-                                            <div className={`flex items-center justify-center w-5 h-5 rounded-full bg-opacity-20 ${isGood ? 'bg-status-ok text-status-ok' : 'bg-status-crit text-status-crit'}`}>
-                                                <Icon name={ArrowIcon} size={12} className="stroke-[3px]" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
-                                        <span className="text-[9px] text-gray-500 uppercase">Target</span>
-                                        <span className="text-[10px] text-gray-300 font-mono">{formatNumber(target)}</span>
-                                    </div>
-                                </div>
-                            )})}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // Error Boundary Component
+        // === ERROR BOUNDARY ===
         class SafeRoot extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null, errorInfo: null };
-            }
-
-            static getDerivedStateFromError(error) {
-                return { hasError: true };
-            }
-
-            componentDidCatch(error, errorInfo) {
-                this.setState({ error: error, errorInfo: errorInfo });
-                console.error("Uncaught error:", error, errorInfo);
-            }
-
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="min-h-screen flex items-center justify-center bg-plant-bg p-6 text-center">
-                            <div className="max-w-md w-full bg-plant-card border border-status-crit/50 rounded-lg p-8 shadow-2xl">
-                                <div className="text-status-crit text-5xl mb-4">⚠️</div>
-                                <h1 className="text-xl font-bold text-white mb-2">System Error</h1>
-                                <p className="text-gray-400 text-sm mb-6">Something went wrong while rendering the dashboard.</p>
-                                <div className="bg-plant-bg/50 border border-status-crit/30 rounded-lg p-4 mb-6 text-left text-sm text-gray-300 overflow-auto max-h-40">
-                                    <p>{this.state.error?.message || 'Unknown error occurred'}</p>
-                                    {this.state.errorInfo && <p className="mt-2 text-xs text-gray-500">Component stack: {this.state.errorInfo.componentStack}</p>}
-                                </div>
-                                <button 
-                                    onClick={() => { 
-                                        localStorage.clear(); 
-                                        sessionStorage.clear(); 
-                                        window.location.reload(); 
-                                    }} 
-                                    className="bg-status-crit hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
-                                >
-                                    <Icon name="RefreshCw" size={18} />
-                                    Reset Application
-                                </button>
-                            </div>
+            constructor(p){super(p);this.state={hasError:false};}
+            static getDerivedStateFromError(){return {hasError:true};}
+            render(){
+                if (this.state.hasError) return (
+                    <div className="min-h-screen flex items-center justify-center bg-plant-bg p-6">
+                        <div className="glass-panel p-8 rounded-2xl text-center max-w-md">
+                            <div className="text-5xl mb-4">âš ï¸</div>
+                            <h1 className="text-xl font-bold text-white mb-2">System Error</h1>
+                            <p className="text-gray-400 mb-6">Something went wrong. Please refresh.</p>
+                            <button onClick={()=>{localStorage.clear();sessionStorage.clear();window.location.reload();}}
+                                className="bg-status-crit hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                                Reset &amp; Refresh
+                            </button>
                         </div>
-                    );
-                }
+                    </div>
+                );
                 return this.props.children;
             }
         }
-        
+
+        // === APP ===
         function App() {
-            const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-            const [auth, setAuth] = useState(false);
-            const [activeTab, setActiveTab] = useState('dash');
-            const [data, setData] = useState({ daily: {}, hourly: [] });
-            const [loading, setLoading] = useState(false);
-            const [errorMsg, setErrorMsg] = useState(null);
+            const [ready, setReady] = useState(false); const [auth, setAuth] = useState(false);
+            const [tab, setTab] = useState('dash'); const [loading, setLoading] = useState(false);
+            const [params, setParams] = useState({}); const [categories, setCategories] = useState([]);
+            const [hourly, setHourly] = useState([]); const [lastUp, setLastUp] = useState('Syncing...');
+            const [err, setErr] = useState(null);
 
             useEffect(() => {
-                if (window.firebaseModulesLoaded) {
-                    setIsFirebaseReady(true);
-                    initFirebase();
-                } else {
-                    window.addEventListener('firebase-modules-ready', () => {
-                        setIsFirebaseReady(true);
-                        initFirebase();
-                    });
-                }
+                const init = () => {
+                    setReady(true);
+                    try {
+                        const { initializeApp, getApps, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, collection, doc, onSnapshot, query, orderBy } = window.firebaseModules;
+                        const app = initializeApp(firebaseConfig);
+                        const a = getAuth(app);
+                        const db = getFirestore(app);
+                        onAuthStateChanged(a, (user) => {
+                            if (user) {
+                                setLoading(true);
+                                // Listen to daily snapshot
+                                onSnapshot(doc(db, "RP_Daily_Report", "Daily_Snapshot"), (snap) => {
+                                    if (snap.exists()) {
+                                        const d = snap.data();
+                                        setParams(d.parameters || {});
+                                        setCategories(d.categories || []);
+                                        setLastUp(d.last_updated ? parseDateTime(d.last_updated) : 'Unknown');
+                                        setLoading(false);
+                                    }
+                                }, e => setErr("Daily read error: "+e.message));
+                                // Listen to hourly trends
+                                const q = query(collection(db, "RP_Daily_Report/Daily_Snapshot/RP_Hourly_Trends"), orderBy("Timestamp", "desc"));
+                                onSnapshot(q, (snap) => {
+                                    const logs = []; snap.forEach(d => logs.push(d.data()));
+                                    setHourly(logs);
+                                }, e => setErr("Hourly read error: "+e.message));
+                            }
+                        });
+                        if (sessionStorage.getItem('rpcm_auth_session')) { setAuth(true); signInAnonymously(a); return; }
+                        const tok = localStorage.getItem('rpcm_auth_token');
+                        if (tok) { try { const {expiry}=JSON.parse(tok); if (new Date().getTime()<expiry) { setAuth(true); signInAnonymously(a); } else localStorage.removeItem('rpcm_auth_token'); } catch(e) { localStorage.removeItem('rpcm_auth_token'); } }
+                    } catch(e) { setErr("Firebase init failed: "+e.message); }
+                };
+                if (window.firebaseModulesLoaded) init();
+                else window.addEventListener('firebase-modules-ready', init);
             }, []);
 
-            const initFirebase = async () => {
-                try {
-                    const { initializeApp, getApps } = window.firebaseModules;
-                    const { getAuth, signInAnonymously, onAuthStateChanged } = window.firebaseModules;
-                    const { getFirestore, collection, doc, onSnapshot, query, orderBy } = window.firebaseModules;
-                    
-                    const app = initializeApp(firebaseConfig);
-                    const authInstance = getAuth(app);
-                    const db = getFirestore(app);
-                    
-                    onAuthStateChanged(authInstance, (user) => {
-                         if (user) {
-                             setLoading(true);
-                             onSnapshot(doc(db, "RP_Daily_Report", "Daily_Snapshot"), (docSnap) => {
-                                if (docSnap.exists()) {
-                                    setData(prev => ({ ...prev, daily: { ...docSnap.data() } }));
-                                    setLoading(false);
-                                }
-                             }, (err) => setErrorMsg("Error reading Daily: " + err.message));
-
-                             const q = query(collection(db, "RP_Daily_Report/Daily_Snapshot/RP_Hourly_Trends"), orderBy("Timestamp", "desc"));
-                             onSnapshot(q, (snap) => {
-                                const logs = [];
-                                snap.forEach(d => logs.push(d.data()));
-                                setData(prev => ({ ...prev, hourly: logs }));
-                             }, (err) => setErrorMsg("Error reading Hourly: " + err.message));
-                         }
-                    });
-
-                    if (sessionStorage.getItem('rpcm_auth_session')) {
-                        setAuth(true);
-                        await signInAnonymously(authInstance);
-                        return;
-                    }
-
-                    const token = localStorage.getItem('rpcm_auth_token');
-                    if (token) {
-                        try {
-                            const { expiry } = JSON.parse(token);
-                            if (new Date().getTime() < expiry) {
-                                setAuth(true);
-                                await signInAnonymously(authInstance);
-                            } else {
-                                localStorage.removeItem('rpcm_auth_token');
-                            }
-                        } catch(e) { localStorage.removeItem('rpcm_auth_token'); }
-                    }
-
-                } catch (err) {
-                    setErrorMsg("Firebase Init Failed: " + err.message);
-                }
-            };
-
-            const handleLogin = async (rememberMe) => {
-                if (rememberMe) {
-                    const expiry = new Date().getTime() + (30 * 24 * 60 * 60 * 1000);
-                    localStorage.setItem('rpcm_auth_token', JSON.stringify({ valid: true, expiry }));
-                } else {
-                    sessionStorage.setItem('rpcm_auth_session', '1');
-                }
+            const login = async (rem) => {
+                if (rem) { localStorage.setItem('rpcm_auth_token', JSON.stringify({valid:true,expiry:new Date().getTime()+30*86400000})); }
+                else sessionStorage.setItem('rpcm_auth_session','1');
                 setAuth(true);
-                const { getAuth, signInAnonymously } = window.firebaseModules;
-                await signInAnonymously(getAuth());
+                await window.firebaseModules.signInAnonymously(window.firebaseModules.getAuth());
             };
+            const logout = () => { setAuth(false); localStorage.removeItem('rpcm_auth_token'); sessionStorage.removeItem('rpcm_auth_session'); window.location.reload(); };
+            const refresh = () => { setLoading(true); setTimeout(()=>setLoading(false),800); };
 
-            const handleSignOut = () => {
-                setAuth(false);
-                localStorage.removeItem('rpcm_auth_token');
-                sessionStorage.removeItem('rpcm_auth_session');
-                window.location.reload();
-            };
-
-            const handleRefresh = () => {
-                setLoading(true);
-                setTimeout(() => setLoading(false), 800);
-            };
-
-            if (!isFirebaseReady) return <div className="h-screen flex items-center justify-center text-white">Initializing System...</div>;
-            if (errorMsg) return <div className="h-screen flex items-center justify-center text-status-crit p-8 text-center">{errorMsg}</div>;
-            if (!auth) return <PasswordGate onLogin={handleLogin} />;
+            if (!ready) return <div className="h-screen flex items-center justify-center text-white">Initializing...</div>;
+            if (err) return <div className="h-screen flex items-center justify-center text-status-crit p-8 text-center">{err}</div>;
+            if (!auth) return <PasswordGate onLogin={login}/>;
 
             return (
                 <div className="min-h-screen w-full md:flex">
                     <div className="hidden md:flex w-64 flex-col fixed h-full border-r border-plant-border bg-plant-card z-20">
-                        <div className="p-6">
-                            <h1 className="text-xl font-bold text-white tracking-wider">RPCM <span className="text-accent-primary">.Monitor</span></h1>
-                        </div>
+                        <div className="p-6"><h1 className="text-xl font-bold text-white tracking-wider">RPCM <span className="text-accent-primary">.Monitor</span></h1></div>
                         <nav className="flex-1 px-4 space-y-2">
-                            <button onClick={() => setActiveTab('dash')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab==='dash'?'bg-accent-primary text-white shadow-glow':'text-gray-400 hover:text-white'}`}>
-                                <Icon name="LayoutDashboard" /> Dashboard
-                            </button>
-                            <button onClick={() => setActiveTab('logs')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab==='logs'?'bg-accent-primary text-white shadow-glow':'text-gray-400 hover:text-white'}`}>
-                                <Icon name="Table2" /> Hourly Logs
-                            </button>
+                            <button onClick={()=>setTab('dash')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${tab==='dash'?'bg-accent-primary text-white shadow-glow':'text-gray-400 hover:text-white'}`}><I n="LayoutDashboard"/> Dashboard</button>
+                            <button onClick={()=>setTab('logs')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${tab==='logs'?'bg-accent-primary text-white shadow-glow':'text-gray-400 hover:text-white'}`}><I n="Table2"/> Hourly Logs</button>
                         </nav>
-                        <div className="p-6">
-                            <button onClick={handleSignOut} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300">
-                                <Icon name="LogOut" size={16} /> Sign Out
-                            </button>
-                        </div>
+                        <div className="p-6"><button onClick={logout} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300"><I n="LogOut" s={16}/> Sign Out</button></div>
                     </div>
-
                     <main className="flex-1 md:ml-64 p-4 md:p-8 min-h-screen">
-                        {activeTab === 'dash' && <Dashboard dailyData={data.daily} hourlyData={data.hourly} isLoading={loading} onRefresh={handleRefresh} />}
-                        {activeTab === 'logs' && <HourlyLogs hourlyData={data.hourly} isLoading={loading} onRefresh={handleRefresh} />}
+                        {tab==='dash' && <Dashboard parameters={params} categories={categories} hourlyData={hourly} lastUpdated={lastUp} isLoading={loading} onRefresh={refresh}/>}
+                        {tab==='logs' && <HourlyLogs hourlyData={hourly} isLoading={loading} onRefresh={refresh}/>}
                     </main>
-
-                    <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav shadow-nav z-50 pb-safe pt-2 px-6 flex justify-between items-center h-[80px]">
-                        <button onClick={() => setActiveTab('dash')} className={`flex flex-col items-center gap-1 ${activeTab==='dash' ? 'text-accent-primary' : 'text-gray-500'}`}>
-                            <div className={`p-1.5 rounded-full ${activeTab==='dash' ? 'bg-accent-primary/20' : ''}`}><Icon name="LayoutDashboard" size={22} /></div>
-                            <span className="text-[10px] font-medium">Dash</span>
-                        </button>
-                        <div className="w-px h-8 bg-white/10"></div>
-                        <button onClick={() => setActiveTab('logs')} className={`flex flex-col items-center gap-1 ${activeTab==='logs' ? 'text-accent-primary' : 'text-gray-500'}`}>
-                            <div className={`p-1.5 rounded-full ${activeTab==='logs' ? 'bg-accent-primary/20' : ''}`}><Icon name="Table2" size={22} /></div>
-                            <span className="text-[10px] font-medium">Logs</span>
-                        </button>
-                        <div className="w-px h-8 bg-white/10"></div>
-                        <button onClick={handleSignOut} className="flex flex-col items-center gap-1 text-gray-500">
-                            <div className="p-1.5"><Icon name="LogOut" size={22} /></div>
-                            <span className="text-[10px] font-medium">Exit</span>
-                        </button>
+                    <div className="md:hidden fixed bottom-0 left-0 right-0 glass-nav shadow-nav z-50 pt-2 px-6 flex justify-between items-center h-[80px]">
+                        <button onClick={()=>setTab('dash')} className={`flex flex-col items-center gap-1 ${tab==='dash'?'text-accent-primary':'text-gray-500'}`}><div className={`p-1.5 rounded-full ${tab==='dash'?'bg-accent-primary/20':''}`}><I n="LayoutDashboard" s={22}/></div><span className="text-[10px]">Dash</span></button>
+                        <button onClick={()=>setTab('logs')} className={`flex flex-col items-center gap-1 ${tab==='logs'?'text-accent-primary':'text-gray-500'}`}><div className={`p-1.5 rounded-full ${tab==='logs'?'bg-accent-primary/20':''}`}><I n="Table2" s={22}/></div><span className="text-[10px]">Logs</span></button>
+                        <button onClick={logout} className="flex flex-col items-center gap-1 text-gray-500"><div className="p-1.5"><I n="LogOut" s={22}/></div><span className="text-[10px]">Exit</span></button>
                     </div>
                 </div>
             );
         }
-        
-        // Render the application
-        console.log("Starting app render");
-        const rootElement = document.getElementById('root');
-        if (rootElement) {
-            const root = ReactDOMClient.createRoot(rootElement);
-            root.render(
-                <SafeRoot>
-                    <React.StrictMode>
-                        <App />
-                    </React.StrictMode>
-                </SafeRoot>
-            );
-        } else {
-            console.error("Root element not found");
+
+        const root = document.getElementById('root');
+        if (root) {
+            const r = ReactDOMClient.createRoot(root);
+            r.render(<SafeRoot><React.StrictMode><App/></React.StrictMode></SafeRoot>);
         }
     </script>
 </body>
