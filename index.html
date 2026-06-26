@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -414,7 +414,9 @@
 
             const getDataItem = (key) => {
                 if (!dailyData) return null;
-                if (dailyData[key] !== undefined) return dailyData[key];
+                // Try parameters first (dynamic format), then flat keys
+                const params = dailyData.parameters || dailyData;
+                if (params[key] !== undefined) return params[key];
                 const keyMap = {
                     'Caustic (NaOH)': 'Caustic_NaOH', 'Caustic_(NaOH)': 'Caustic_NaOH',
                     'Equiv. CMB Recovery': 'Equiv_CMB_Recovery', 'Equiv._CMB_Recovery': 'Equiv_CMB_Recovery',
@@ -434,8 +436,8 @@
             const getUnit = (key) => getDataItem(key)?.Unit ?? '';
 
             const lastUpdated = useMemo(() => {
-                if (dailyData.Last_Updated) return parseDateTime(dailyData.Last_Updated);
                 if (dailyData.last_updated) return parseDateTime(dailyData.last_updated);
+                if (dailyData.Last_Updated) return parseDateTime(dailyData.Last_Updated);
                 if (hourlyData && hourlyData.length > 0) {
                      let maxEpoch = 0; let latestTS = null;
                      hourlyData.forEach(item => {
@@ -576,7 +578,7 @@
                     return (
                         <div className="min-h-screen flex items-center justify-center bg-plant-bg p-6 text-center">
                             <div className="max-w-md w-full bg-plant-card border border-status-crit/50 rounded-lg p-8 shadow-2xl">
-                                <div className="text-status-crit text-5xl mb-4">⚠️</div>
+                                <div className="text-status-crit text-5xl mb-4">ΓÜá∩╕Å</div>
                                 <h1 className="text-xl font-bold text-white mb-2">System Error</h1>
                                 <p className="text-gray-400 text-sm mb-6">Something went wrong while rendering the dashboard.</p>
                                 <div className="bg-plant-bg/50 border border-status-crit/30 rounded-lg p-4 mb-6 text-left text-sm text-gray-300 overflow-auto max-h-40">
@@ -637,7 +639,21 @@
                              setLoading(true);
                              onSnapshot(doc(db, "RP_Daily_Report", "Daily_Snapshot"), (docSnap) => {
                                 if (docSnap.exists()) {
-                                    setData(prev => ({ ...prev, daily: { ...docSnap.data() } }));
+                                    const raw = docSnap.data();
+                                    const params = raw.parameters || {};
+                                    const cats = raw.categories || [];
+                                    // If flat format, wrap into parameters
+                                    if (!raw.parameters || Object.keys(raw.parameters).length === 0) {
+                                        const p = {}; let o = 0;
+                                        Object.keys(raw).forEach(k => {
+                                            if (k !== 'last_updated' && k !== 'categories' && k !== 'Last_Updated' && typeof raw[k] === 'object' && raw[k] !== null && !Array.isArray(raw[k])) {
+                                                p[k] = {...raw[k], Category: cats[0]||'General', displayOrder: o++};
+                                            }
+                                        });
+                                        setData(prev => ({ ...prev, daily: { ...raw, parameters: p, categories: cats } }));
+                                    } else {
+                                        setData(prev => ({ ...prev, daily: { ...raw, parameters: params, categories: cats } }));
+                                    }
                                     setLoading(false);
                                 }
                              }, (err) => setErrorMsg("Error reading Daily: " + err.message));
@@ -767,3 +783,4 @@
     </script>
 </body>
 </html>
+
